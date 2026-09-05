@@ -114,7 +114,12 @@ echo flashMessages();
                                     <a href="<?= SITE_URL ?>/booking_form.php?id=<?= $b['id'] ?>" class="btn btn-outline-primary" title="<?= te('common.edit') ?>"><i class="fas fa-edit"></i></a>
                                 <?php endif; ?>
                                 <?php if (hasPermission('cancel_bookings') && $b['status'] !== 'Canceled'): ?>
-                                    <a href="<?= SITE_URL ?>/booking_action.php?action=cancel&id=<?= $b['id'] ?>" class="btn btn-outline-danger confirm-action" data-confirm="<?= te('bk.cancel_confirm') ?>" title="<?= te('common.cancel') ?>"><i class="fas fa-times"></i></a>
+                                    <form method="POST" action="<?= SITE_URL ?>/booking_action.php" class="d-inline confirm-action" data-confirm="<?= te('bk.cancel_confirm') ?>">
+                                        <input type="hidden" name="action" value="cancel">
+                                        <input type="hidden" name="id" value="<?= $b['id'] ?>">
+                                        <?php csrf_field(); ?>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="<?= te('common.cancel') ?>"><i class="fas fa-times"></i></button>
+                                    </form>
                                 <?php endif; ?>
                             </div>
                         </td>

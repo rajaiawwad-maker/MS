@@ -14,6 +14,7 @@ $stmt->execute([$token]);
 $booking = $stmt->fetch();
 
 if (!$booking) {
+    auditSecurity('invalid_confirmation_token', ['token' => substr($token, 0, 16) . '...', 'ip' => $_SERVER['REMOTE_ADDR'] ?? '']);
     http_response_code(404);
     die(t('cf.not_found'));
 }
@@ -23,42 +24,77 @@ $bookingId = $booking['id'];
 $message = ''; $msgClass = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    validate_csrf();
     $action = $_POST['action'] ?? '';
-    if (in_array($action, ['confirm','change','decline'])) {
-        $responseMap = ['confirm' => 'Confirmed', 'change' => 'Change Requested', 'decline' => 'Declined'];
-        $response = $responseMap[$action];
-        $now = date('Y-m-d H:i:s');
+    if (!in_array($action, ['confirm','change','decline'], true)) {
+        auditSecurity('invalid_confirmation_action', ['action' => $action, 'booking_id' => $bookingId ?? 0]);
+        http_response_code(400);
+        $message = t('cf.invalid_request');
+        $msgClass = 'danger';
+    } else {
+        $alreadyConfirmed = (!empty($booking['customer_confirmed_at']) && $booking['status'] === 'Confirmed');
+        $skipDbWrite = false;
 
-        $updates = ["customer_confirmed_at = ?", "customer_response = ?"];
-        $params = [$now, $response];
-
-        if ($action === 'confirm') {
-            $updates[] = "status = 'Confirmed'";
-            $message = t('cf.success_msg');
-            $msgClass = 'success';
-        } elseif ($action === 'change') {
-            $updates[] = "status = 'Change Requested'";
-            $message = t('cf.change_received');
+        if ($alreadyConfirmed && $action === 'confirm') {
+            $message = t('cf.already_confirmed_msg');
             $msgClass = 'info';
-        } else {
-            $message = t('cf.decline_noted');
-            $msgClass = 'warning';
+            $skipDbWrite = true;
         }
-        $params[] = $bookingId;
 
-        try {
-            $conn->beginTransaction();
-            $stmt = $conn->prepare("UPDATE bookings SET " . implode(', ', $updates) . " WHERE id = ?");
-            $stmt->execute($params);
-            auditLog('customer_'.$action, 'Booking', $bookingId, null, ['response' => $response, 'at' => $now]);
-            $conn->commit();
-            $booking['customer_confirmed_at'] = $now;
-            $booking['customer_response'] = $response;
-            if ($action === 'confirm') $booking['status'] = 'Confirmed';
-            if ($action === 'change') $booking['status'] = 'Change Requested';
-        } catch (Exception $e) {
-            $message = t('err.error_prefix') . ': '.$e->getMessage();
-            $msgClass = 'danger';
+        $existingResponse = $booking['customer_response'] ?? '';
+        $alreadyResponded = !empty($existingResponse);
+        if (!$skipDbWrite && $alreadyResponded && in_array($existingResponse, ['Confirmed','Declined']) && $action !== 'change') {
+            if (($existingResponse === 'Confirmed' && $action === 'confirm') ||
+                ($existingResponse === 'Declined' && $action === 'decline')) {
+                $skipDbWrite = true;
+                if ($existingResponse === 'Declined') {
+                    $message = t('cf.decline_noted');
+                    $msgClass = 'warning';
+                } else {
+                    $message = t('cf.already_confirmed_msg');
+                    $msgClass = 'info';
+                }
+            }
+        }
+
+        if (!$skipDbWrite) {
+            $responseMap = ['confirm' => 'Confirmed', 'change' => 'Change Requested', 'decline' => 'Declined'];
+            $response = $responseMap[$action];
+            $now = date('Y-m-d H:i:s');
+
+            $updates = ["customer_confirmed_at = ?", "customer_response = ?"];
+            $params = [$now, $response];
+
+            if ($action === 'confirm') {
+                $updates[] = "status = 'Confirmed'";
+                $message = t('cf.success_msg');
+                $msgClass = 'success';
+            } elseif ($action === 'change') {
+                $updates[] = "status = 'Change Requested'";
+                $message = t('cf.change_received');
+                $msgClass = 'info';
+            } else {
+                $message = t('cf.decline_noted');
+                $msgClass = 'warning';
+            }
+            $params[] = $bookingId;
+
+            try {
+                $conn->beginTransaction();
+                $stmt = $conn->prepare("UPDATE bookings SET " . implode(', ', $updates) . " WHERE id = ?");
+                $stmt->execute($params);
+                auditLog('customer_'.$action, 'Booking', $bookingId, null, ['response' => $response, 'at' => $now]);
+                $conn->commit();
+                $booking['customer_confirmed_at'] = $now;
+                $booking['customer_response'] = $response;
+                if ($action === 'confirm') $booking['status'] = 'Confirmed';
+                if ($action === 'change') $booking['status'] = 'Change Requested';
+            } catch (Exception $e) {
+                $msg = function_exists('t') ? t('err.generic') : 'An error occurred while saving your response.';
+                $log = function_exists('t') ? t('err.review_log') : 'Please try again later or contact support.';
+                $message = $msg . ' ' . $log;
+                $msgClass = 'danger';
+            }
         }
     }
 }
@@ -82,13 +118,13 @@ $alreadyResponded = !empty($booking['customer_response']);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= te('cf.title') ?> - <?= e($companyName) ?></title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha384-DyZ88mC6Up2uqS4h/KRgHuoeGwBcD4Ng9SiP4dIRy0EXTlnuz47vAwmeGwVChigm" crossorigin="anonymous">
     <?php if (IS_RTL): ?>
     <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/rtl.css">
-    <style>html[dir="rtl"] body { font-family: 'Tahoma', 'Segoe UI', 'Arial', sans-serif; }</style>
+    <style nonce="<?= csp_nonce() ?>">html[dir="rtl"] body { font-family: 'Tahoma', 'Segoe UI', 'Arial', sans-serif; }</style>
     <?php endif; ?>
-    <style>
+    <style nonce="<?= csp_nonce() ?>">
         body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
         .booking-card { border-radius: 1rem; border: none; box-shadow: 0 20px 60px rgba(0,0,0,0.2); overflow: hidden; }
         .card-header-brand { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 2rem; }
@@ -173,6 +209,7 @@ $alreadyResponded = !empty($booking['customer_response']);
 
                     <?php if (!$alreadyResponded && $booking['status'] !== 'Canceled'): ?>
                         <form method="POST" class="mb-3">
+                            <?php csrf_field(); ?>
                             <div class="text-center mb-4">
                                 <h5 class="font-weight-bold mb-3"><?= te('cf.please_confirm') ?></h5>
                             </div>

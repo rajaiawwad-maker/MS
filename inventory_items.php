@@ -21,6 +21,7 @@ function t_ii_status($s) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    validate_csrf();
     $action = $_POST['action'] ?? ''; $id = (int)($_POST['id'] ?? 0);
     $it = (int)($_POST['item_type_id'] ?? 0); $sn = trim($_POST['serial_number'] ?? '');
     $ac = trim($_POST['asset_code'] ?? ''); $pd = trim($_POST['purchase_date'] ?? '');
@@ -99,6 +100,7 @@ echo flashMessages();
 </tbody></table></div></div></div>
 
 <div class="modal fade" id="formModal" tabindex="-1"><div class="modal-dialog modal-lg modal-dialog-centered"><form class="modal-content" method="POST">
+<?php csrf_field(); ?>
 <div class="modal-header"><h5 class="modal-title" id="formModalTitle"><?= te('inv.ii_add') ?></h5><button class="close" data-dismiss="modal">&times;</button></div>
 <div class="modal-body">
 <input type="hidden" name="action" id="formAction" value="create"><input type="hidden" name="id" id="formId" value="">

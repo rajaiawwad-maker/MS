@@ -24,6 +24,7 @@ $rows = $stmt->fetchAll();
 $total = array_sum(array_column($rows, 'amount'));
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && hasPermission('manage_expenses')) {
+    validate_csrf();
     $action = $_POST['action'] ?? ''; $id = (int)($_POST['id'] ?? 0);
     $typeId = (int)($_POST['expense_type_id'] ?? 0);
     $date = DateTime::createFromFormat('d/m/Y', $_POST['date'] ?? date('d/m/Y'));
@@ -117,6 +118,7 @@ echo flashMessages();
 
 <?php if (hasPermission('manage_expenses')): ?>
 <div class="modal fade" id="formModal" tabindex="-1"><div class="modal-dialog modal-lg modal-dialog-centered"><form class="modal-content" method="POST">
+<?php csrf_field(); ?>
 <div class="modal-header"><h5 class="modal-title" id="formModalTitle"><?= te('exp.record_expense_title') ?></h5><button class="close" data-dismiss="modal">&times;</button></div>
 <div class="modal-body">
 <input type="hidden" name="action" id="formAction" value="create"><input type="hidden" name="id" id="formId" value="">

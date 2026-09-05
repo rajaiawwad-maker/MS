@@ -25,6 +25,7 @@ $page_title = $editing ? t('title.booking_edit') : t('title.booking_new');
 $active_nav = 'bookings';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    validate_csrf();
     $clientId = (int)($_POST['client_id'] ?? 0);
     $dateFrom = DateTime::createFromFormat('d/m/Y', $_POST['date_from'] ?? date('d/m/Y'));
     $dateTo = DateTime::createFromFormat('d/m/Y', $_POST['date_to'] ?? date('d/m/Y'));
@@ -151,6 +152,7 @@ echo flashMessages();
 </div>
 
 <form method="POST" id="bookingForm">
+<?php csrf_field(); ?>
 <div class="row">
     <div class="col-xl-8 col-lg-8 mb-3 mb-lg-0">
         <div class="card mb-3">

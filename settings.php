@@ -6,6 +6,7 @@ $page_title = t('title.settings');
 $active_nav = 'setup';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['settings']) && is_array($_POST['settings'])) {
+    validate_csrf();
     $stmt = $conn->prepare("INSERT INTO system_settings (setting_key, setting_value, description) VALUES (?,?,?)
         ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_at = NOW()");
     foreach ($_POST['settings'] as $key => $value) {
@@ -30,6 +31,7 @@ echo flashMessages();
 </div>
 
 <form method="POST">
+<?php csrf_field(); ?>
 <div class="row">
     <div class="col-md-6 mb-3">
         <div class="card">

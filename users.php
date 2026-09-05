@@ -7,6 +7,7 @@ $page_title = t('title.users');
 $active_nav = 'users';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    validate_csrf();
     $action = $_POST['action'] ?? '';
     $id = (int)($_POST['id'] ?? 0);
     $name = trim($_POST['name'] ?? '');
@@ -16,6 +17,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $roleId = (int)($_POST['role_id'] ?? 0);
     $active = isset($_POST['active']) ? 1 : 0;
     $password = $_POST['password'] ?? '';
+
+    if ($action === 'deactivate') {
+        $uid = (int)($_POST['user_id'] ?? 0);
+        if ($uid !== (int)$_SESSION['user_id']) {
+            $conn->prepare("UPDATE users SET active = 0, updated_at=NOW() WHERE id = ?")->execute([$uid]);
+            auditLog('deactivate', 'User', $uid);
+            setFlash('success', t('u.deactivated'));
+        } else {
+            setFlash('error', t('u.cannot_deactivate_self'));
+        }
+        redirect(SITE_URL.'/users.php');
+    }
 
     if ($action === 'create') {
         if ($name === '' || $username === '' || $roleId <= 0 || $password === '') {
@@ -27,7 +40,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $stmt = $conn->prepare("INSERT INTO users (name, username, email, password_hash, role_id, phone, active) VALUES (?,?,?,?,?,?,?)");
             $stmt->execute([$name, $username, $email, $hash, $roleId, $phone, $active]);
-            auditLog('create', 'User', $conn->lastInsertId());
+            $newId = $conn->lastInsertId();
+            auditLog('create', 'User', $newId);
+            auditSecurity('password_changed', ['user_id' => $newId, 'via' => 'users_management']);
             setFlash('success', t('u.create_success'));
         } catch (Exception $e) { setFlash('error', t('u.username_email_exists')); }
     } elseif ($action === 'update' && $id > 0) {
@@ -41,6 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (strlen($password) < 8) { setFlash('error', t('u.password_min')); redirect(SITE_URL.'/users.php'); }
             $updates .= ", password_hash=?";
             $params[] = password_hash($password, PASSWORD_DEFAULT);
+            auditSecurity('password_changed', ['user_id' => $id, 'via' => 'users_management']);
         }
         $params[] = $id;
         try {
@@ -49,17 +65,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             auditLog('update', 'User', $id);
             setFlash('success', t('u.update_success'));
         } catch (Exception $e) { setFlash('error', t('u.username_email_exists')); }
-    }
-    redirect(SITE_URL.'/users.php');
-}
-if (isset($_GET['delete'])) {
-    $id = (int)$_GET['delete'];
-    if ($id !== (int)$_SESSION['user_id']) {
-        $conn->prepare("UPDATE users SET active = 0, updated_at=NOW() WHERE id = ?")->execute([$id]);
-        auditLog('deactivate', 'User', $id);
-        setFlash('success', t('u.deactivated'));
-    } else {
-        setFlash('error', t('u.cannot_deactivate_self'));
     }
     redirect(SITE_URL.'/users.php');
 }
@@ -91,7 +96,12 @@ echo flashMessages();
     <td class="text-right">
         <button class="btn btn-sm btn-outline-secondary" onclick='editUser(<?= json_encode($u, JSON_HEX_TAG) ?>)'><i class="fas fa-edit"></i></button>
         <?php if ((int)$u['id'] !== (int)$_SESSION['user_id']): ?>
-            <a href="<?= SITE_URL ?>/users.php?delete=<?= $u['id'] ?>" class="btn btn-sm btn-outline-danger confirm-action" data-confirm="<?= t('u.deactivate_confirm') ?>"><i class="fas fa-times"></i></a>
+            <form method="POST" action="<?= SITE_URL ?>/users.php" class="d-inline confirm-action" data-confirm="<?= t('u.deactivate_confirm') ?>">
+                <input type="hidden" name="action" value="deactivate">
+                <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
+                <?php csrf_field(); ?>
+                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-times"></i></button>
+            </form>
         <?php endif; ?>
     </td>
 </tr>
@@ -117,6 +127,7 @@ echo flashMessages();
 </div>
 
 <div class="modal fade" id="userModal" tabindex="-1"><div class="modal-dialog modal-lg modal-dialog-centered"><form class="modal-content" method="POST">
+<?php csrf_field(); ?>
 <div class="modal-header"><h5 class="modal-title" id="userModalTitle"><?= te('u.new_user') ?></h5><button class="close" data-dismiss="modal">&times;</button></div>
 <div class="modal-body">
 <input type="hidden" name="action" id="userAction" value="create"><input type="hidden" name="id" id="userId" value="">

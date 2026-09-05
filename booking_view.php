@@ -199,7 +199,14 @@ echo flashMessages();
                                     <td><small class="text-muted"><?= e($p['created_by_name'] ?? '') ?></small></td>
                                     <td>
                                         <?php if (hasPermission('record_payments')): ?>
-                                            <a href="<?= SITE_URL ?>/payment_action.php?action=delete&id=<?= $p['id'] ?>&bk=<?= $bookingId ?>" class="btn btn-sm btn-outline-danger confirm-delete"><i class="fas fa-trash"></i></a>
+                                            <form method="POST" action="<?= SITE_URL ?>/payment_action.php" class="d-inline confirm-delete">
+                                                <input type="hidden" name="action" value="delete">
+                                                <input type="hidden" name="id" value="<?= $p['id'] ?>">
+                                                <input type="hidden" name="bk" value="<?= $bookingId ?>">
+                                                <input type="hidden" name="ref" value="booking">
+                                                <?php csrf_field(); ?>
+                                                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                                            </form>
                                         <?php endif; ?>
                                     </td>
                                 </tr>
@@ -292,7 +299,12 @@ echo flashMessages();
                 <a href="<?= SITE_URL ?>/reports_client_statement.php?client_id=<?= $booking['client_id'] ?>" class="btn btn-outline-secondary btn-block"><i class="fas fa-file-alt mr-1"></i> <?= t('bk.client_statement') ?></a>
                 <hr>
                 <?php if ($booking['status'] !== 'Canceled' && hasPermission('cancel_bookings')): ?>
-                    <a href="<?= SITE_URL ?>/booking_action.php?action=cancel&id=<?= $bookingId ?>" class="btn btn-outline-danger btn-block mb-2 confirm-action" data-confirm="<?= te('bk.cancel_release_confirm') ?>"><i class="fas fa-times mr-1"></i> <?= t('common.cancel') ?> <?= t('bk.info_title') ?></a>
+                    <form method="POST" action="<?= SITE_URL ?>/booking_action.php" class="d-block mb-2 confirm-action" data-confirm="<?= te('bk.cancel_release_confirm') ?>">
+                        <input type="hidden" name="action" value="cancel">
+                        <input type="hidden" name="id" value="<?= $bookingId ?>">
+                        <?php csrf_field(); ?>
+                        <button type="submit" class="btn btn-outline-danger btn-block"><i class="fas fa-times mr-1"></i> <?= t('common.cancel') ?> <?= t('bk.info_title') ?></button>
+                    </form>
                 <?php endif; ?>
                 <?php if (hasPermission('edit_bookings') && $booking['status'] !== 'Closed' && $booking['status'] !== 'Canceled'):
                     $next = [
@@ -305,7 +317,13 @@ echo flashMessages();
                     if (isset($next[$booking['status']])):
                         [$ns, $lbl] = $next[$booking['status']];
                 ?>
-                    <a href="<?= SITE_URL ?>/booking_action.php?action=status&id=<?= $bookingId ?>&to=<?= urlencode($ns) ?>" class="btn btn-success btn-block confirm-action" data-confirm="<?= te('msg.change_status_to', [$ns]) ?>"><i class="fas fa-forward mr-1"></i> <?= $lbl ?></a>
+                    <form method="POST" action="<?= SITE_URL ?>/booking_action.php" class="d-block confirm-action" data-confirm="<?= te('msg.change_status_to', [$ns]) ?>">
+                        <input type="hidden" name="action" value="status">
+                        <input type="hidden" name="id" value="<?= $bookingId ?>">
+                        <input type="hidden" name="to" value="<?= $ns ?>">
+                        <?php csrf_field(); ?>
+                        <button type="submit" class="btn btn-success btn-block"><i class="fas fa-forward mr-1"></i> <?= $lbl ?></button>
+                    </form>
                 <?php endif; endif; ?>
             </div>
         </div>
@@ -332,7 +350,11 @@ echo flashMessages();
 <?php if (hasPermission('record_payments') && $booking['status'] !== 'Canceled'): ?>
 <div class="modal fade" id="paymentModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
-        <form class="modal-content" method="POST" action="<?= SITE_URL ?>/payment_action.php?action=create&bk=<?= $bookingId ?>">
+        <form class="modal-content" method="POST" action="<?= SITE_URL ?>/payment_action.php">
+            <?php csrf_field(); ?>
+            <input type="hidden" name="action" value="create">
+            <input type="hidden" name="bk" value="<?= $bookingId ?>">
+            <input type="hidden" name="ref" value="booking">
             <div class="modal-header">
                 <h5 class="modal-title"><i class="fas fa-plus-circle mr-2"></i><?= t('pay.add_title') ?></h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="<?= t('common.close') ?>"><span aria-hidden="true">&times;</span></button>

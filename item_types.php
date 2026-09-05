@@ -6,6 +6,7 @@ $page_title = t('title.item_types');
 $active_nav = 'inventory';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    validate_csrf();
     $action = $_POST['action'] ?? ''; $id = (int)($_POST['id'] ?? 0);
     $cat = (int)($_POST['category_id'] ?? 0); $name = trim($_POST['name'] ?? '');
     $desc = trim($_POST['description'] ?? ''); $rv = (float)($_POST['default_rental_value'] ?? 0);
@@ -78,6 +79,7 @@ $today = date('Y-m-d');
 </tbody></table></div></div></div>
 
 <div class="modal fade" id="formModal" tabindex="-1"><div class="modal-dialog modal-lg modal-dialog-centered"><form class="modal-content" method="POST">
+<?php csrf_field(); ?>
 <div class="modal-header"><h5 class="modal-title" id="formModalTitle"><?= te('inv.it_new') ?></h5><button class="close" data-dismiss="modal">&times;</button></div>
 <div class="modal-body">
 <input type="hidden" name="action" id="formAction" value="create"><input type="hidden" name="id" id="formId" value="">

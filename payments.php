@@ -266,7 +266,13 @@ echo flashMessages();
         <?php endif; ?>
         <a href="<?= SITE_URL ?>/booking_view.php?id=<?= (int)$r['booking_id'] ?>" class="btn btn-sm btn-outline-primary mr-1"><i class="fas fa-eye"></i></a>
         <?php if ($canEdit): ?>
-        <a href="<?= SITE_URL ?>/payment_action.php?action=delete&id=<?= (int)$r['id'] ?>&ref=payments" class="btn btn-sm btn-outline-danger confirm-delete" onclick="return confirm(<?= json_encode(t('pay.delete_confirm')) ?>)"><i class="fas fa-trash"></i></a>
+        <form method="POST" action="<?= SITE_URL ?>/payment_action.php" class="d-inline confirm-delete">
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
+            <input type="hidden" name="ref" value="payments">
+            <?php csrf_field(); ?>
+            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm(<?= json_encode(t('pay.delete_confirm')) ?>)"><i class="fas fa-trash"></i></button>
+        </form>
         <?php endif; ?>
     </td>
 </tr>
@@ -313,7 +319,10 @@ echo flashMessages();
 <?php if ($canEdit): ?>
 <div class="modal fade" id="paymentModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-        <form class="modal-content" method="POST" action="<?= SITE_URL ?>/payment_action.php?action=create&ref=payments" id="newPaymentForm">
+        <form class="modal-content" method="POST" action="<?= SITE_URL ?>/payment_action.php" id="newPaymentForm">
+            <?php csrf_field(); ?>
+            <input type="hidden" name="action" value="create">
+            <input type="hidden" name="ref" value="payments">
             <div class="modal-header">
                 <h5 class="modal-title"><i class="fas fa-plus-circle mr-2 text-success"></i><?= t('pay.add_title') ?></h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="<?= t('common.close') ?>"><span aria-hidden="true">&times;</span></button>

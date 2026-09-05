@@ -2,12 +2,12 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script><!-- SRI TODO -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script><!-- SRI TODO -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script><!-- SRI TODO -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script><!-- SRI TODO -->
 <script src="<?= SITE_URL ?>/assets/js/app.js?v=<?= md5_file(__DIR__ . '/../assets/js/app.js') ?>"></script>
-<script>
+<script nonce="<?= csp_nonce() ?>">
     $(function() {
         function isMobile() { return window.matchMedia('(max-width: 767.98px)').matches; }
         $('#sidebarCollapse').on('click', function() {

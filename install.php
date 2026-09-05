@@ -52,16 +52,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $configStr = '<?php
 date_default_timezone_set(\'Asia/Riyadh\');
-ini_set(\'display_errors\', 1);
-ini_set(\'display_startup_errors\', 1);
-error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED & ~E_STRICT);
+ini_set(\'display_errors\', \'0\');
+ini_set(\'display_startup_errors\', \'0\');
+ini_set(\'log_errors\', \'1\');
+error_reporting(E_ALL);
 
 define(\'DB_HOST\', \'' . addslashes($dbHost) . '\');
 define(\'DB_USER\', \'' . addslashes($dbUser) . '\');
 define(\'DB_PASS\', \'' . addslashes($dbPass) . '\');
 define(\'DB_NAME\', \'' . addslashes($dbName) . '\');
 
-define(\'SITE_URL\', \'http://\' . $_SERVER[\'HTTP_HOST\'] . str_replace(\'\\\\\', \'/\', dirname($_SERVER[\'SCRIPT_NAME\'])));
+$scriptDir = str_replace(\'\\\\\', \'/\', dirname($_SERVER[\'SCRIPT_NAME\'] ?? \'/index.php\'));
+if ($scriptDir === \'/\' || $scriptDir === \'\\\\\') $scriptDir = \'\';
+$httpHost = $_SERVER[\'HTTP_HOST\'] ?? \'localhost\';
+$isSecureRequest =
+    (!empty($_SERVER[\'HTTPS\']) && $_SERVER[\'HTTPS\'] !== \'off\')
+    || (isset($_SERVER[\'SERVER_PORT\']) && (int)$_SERVER[\'SERVER_PORT\'] === 443);
+$scheme = $isSecureRequest ? \'https://\' : \'http://\';
+define(\'SITE_URL\', $scheme . $httpHost . $scriptDir);
 define(\'SITE_PATH\', realpath(dirname(__FILE__)));
 
 define(\'CURRENCY_SYMBOL\', \'JOD\');
@@ -73,18 +81,47 @@ define(\'BOOKING_PREFIX\', \'BK\');
 
 define(\'UPLOAD_DIR\', SITE_PATH . DIRECTORY_SEPARATOR . \'uploads\');
 if (!file_exists(UPLOAD_DIR)) {
-    mkdir(UPLOAD_DIR, 0755, true);
+    @mkdir(UPLOAD_DIR, 0755, true);
 }
 
 require_once SITE_PATH . \'/includes/functions.php\';
 require_once SITE_PATH . \'/includes/db.php\';
 
-session_start();
+if (php_sapi_name() !== \'cli\' && session_status() === PHP_SESSION_NONE) {
+    $cookieSecure = $isSecureRequest;
+    $cookiePath = \'/\';
+    $cookieDomain = \'\';
+    if (PHP_VERSION_ID >= 70300) {
+        session_set_cookie_params([
+            \'lifetime\' => 0,
+            \'path\'     => $cookiePath,
+            \'domain\'   => $cookieDomain,
+            \'secure\'   => $cookieSecure,
+            \'httponly\' => true,
+            \'samesite\' => \'Lax\',
+        ]);
+    } else {
+        session_set_cookie_params(0, $cookiePath . \'; SameSite=Lax\', $cookieDomain, $cookieSecure, true);
+        ini_set(\'session.cookie_samesite\', \'Lax\');
+    }
+    ini_set(\'session.cookie_httponly\', \'1\');
+    ini_set(\'session.cookie_secure\', $cookieSecure ? \'1\' : \'0\');
+    ini_set(\'session.use_strict_mode\', \'1\');
+    session_start();
+}
+
+emit_security_headers();
 
 $db = new Database();
 $conn = $db->getConnection();
 
 loadSystemSettings();
+
+initI18n();
+define(\'LANG_CODE\', getActiveLang());
+define(\'IS_RTL\',    isRtlLang());
+
+enforce_session_timeout();
 ';
             file_put_contents($configPath, $configStr);
             $messages[] = "Configuration file written.";

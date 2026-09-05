@@ -7,6 +7,7 @@ $user = currentUser();
 $userId = (int)$user['id'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    validate_csrf();
     $action = $_POST['action'] ?? '';
     if ($action === 'profile') {
         $name = trim($_POST['name'] ?? '');
@@ -30,6 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         elseif ($new !== $conf) { setFlash('error', t('profile.passwords_mismatch')); }
         else {
             $conn->prepare("UPDATE users SET password_hash=?, updated_at=NOW() WHERE id=?")->execute([password_hash($new, PASSWORD_DEFAULT), $userId]);
+            auditSecurity('password_changed', ['via' => 'profile']);
             setFlash('success', t('profile.password_changed'));
         }
     }
@@ -52,6 +54,7 @@ echo flashMessages();
             <div class="card-header"><i class="fas fa-user mr-2"></i><?= te('profile.profile_information') ?></div>
             <div class="card-body">
                 <form method="POST">
+                    <?php csrf_field(); ?>
                     <input type="hidden" name="action" value="profile">
                     <div class="form-row">
                         <div class="form-group col-md-6"><label><?= te('u.full_name') ?> *</label><input required name="name" class="form-control" value="<?= e($u['name']) ?>"></div>
@@ -71,6 +74,7 @@ echo flashMessages();
             <div class="card-header"><i class="fas fa-lock mr-2"></i><?= te('profile.change_password') ?></div>
             <div class="card-body">
                 <form method="POST">
+                    <?php csrf_field(); ?>
                     <input type="hidden" name="action" value="password">
                     <div class="form-group"><label><?= te('profile.current_password') ?></label><input type="password" required name="current_password" class="form-control"></div>
                     <div class="form-group"><label><?= te('profile.new_password') ?></label><input type="password" required name="new_password" class="form-control" minlength="8"></div>
