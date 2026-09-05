@@ -1,8 +1,32 @@
 # DJ & RAK REST API — Implementation Tasks
 ==========================================
 
-**Status legend**: `pending`, `in_progress`, `blocked`, `completed`  
+**Status legend**: `pending`, `in_progress`, `blocked`, `completed`
 **PRs = pending tasks to be done during IMPLEMENT phase**
+
+---
+
+## 🟢 Progress Dashboard (as of 2026-09-05)
+
+```
+Plan Tasks:      17 / 17  ✅ COMPLETED (GitHub Issues #1–#17 all CLOSED)
+Acceptance Crit: 20 / 20  ✅ PASS      (review.md AC-1 → AC-20)
+Task TR Checks:  36 / 36  ✅ PASS      (per-task Test Requirements)
+Rubric scores:   AC-15=5/5, AC-16=5/5, TR-1.5=5/5, TR-16.4=5/5, TR-17.4=5/5
+Code quality:    22/22 PHP syntax ✅, 72 routes × 72 handlers ✅, 0 SQL interpolations ✅
+Postman:         81 requests (≥50 reqd) ✅, v2.1 schema ✅, pre-request auto-login ✅, pm.test all ✅
+Docs:            65,991 bytes (≥5 KB reqd), 1,738 lines ✅
+Security:        0 critical / 0 blocking / 2 LOW-sev recommendations only
+```
+
+**Issue tracker (all 17 closed)**: 👉 https://github.com/rajaiawwad-maker/MS/issues?q=is%3Aissue+label%3Aapi+label%3Atask+is%3Aclosed
+
+**Evidence links**:
+| Artifact | SHA + URL |
+|----------|-----------|
+| Plan+Spec baseline | c57ba12 — [spec.md](https://github.com/rajaiawwad-maker/MS/blob/main/.trae/specs/api_mobile_app_20260905/spec.md) · [tasks.md](https://github.com/rajaiawwad-maker/MS/blob/main/.trae/specs/api_mobile_app_20260905/tasks.md) |
+| Implementation | [9f890ae](https://github.com/rajaiawwad-maker/MS/commit/9f890ae) — 27 files changed, +7,950 lines (api/ 22 PHP + 2 htaccess, docs/postman/*.json, API_DOCUMENTATION.md) |
+| Independent Review | [2dcf59e](https://github.com/rajaiawwad-maker/MS/commit/2dcf59e) — [review.md](https://github.com/rajaiawwad-maker/MS/blob/2dcf59e/.trae/specs/api_mobile_app_20260905/review.md) · 559 lines · 20/20 AC · 36/36 TR · security deep-check |
 
 ---
 
@@ -19,8 +43,8 @@
 
 ## Task 1: API Infrastructure Bootstrap (Route Dispatcher / Response / Auth / Tokens / CORS)
 
-**Status**: pending  
-**Priority**: high  
+**Status**: completed ✅ — GitHub Issue [#1](https://github.com/rajaiawwad-maker/MS/issues/1) CLOSED | Close evidence: comment [id=5554567367](https://github.com/rajaiawwad-maker/MS/issues/1#issuecomment-5554567367) · Implementation commit [9f890ae](https://github.com/rajaiawwad-maker/MS/commit/9f890ae) · Review commit [2dcf59e](https://github.com/rajaiawwad-maker/MS/commit/2dcf59e)
+**Priority**: high
 **Depends On**: none  
 **Files to create (all under new `api/v1/` subfolder)**:
 - `api/index.php` → minimal htaccess-compatible front controller that requires `api/v1/index.php`.
@@ -124,17 +148,17 @@ POST   /i18n/set                        auth
 ```
 
 **Test Requirements (Task-1 TRs, self-verify):**
-- **rule TR-1.1**: Browse `/api/v1/auth/login` returns 200 JSON (even if 405 for GET method or 422 for missing fields — returns JSON envelope).
-- **rule TR-1.2**: Ensure `SHOW TABLES LIKE 'api_tokens'` returns 1 row after first call to auth/login route.
-- **rule TR-1.3**: CORS: `curl -X OPTIONS /api/v1/auth/login` returns HTTP 200, empty body, `Access-Control-Allow-Origin`, `Allow-Headers`, `Allow-Methods` present.
-- **rule TR-1.4**: Rate limiter: 6 rapid POST calls to `/api/v1/auth/login` with same IP within 60s must return 1+ HTTP 429 response at last call (or at call #6).
-- **rubric TR-1.5**: Architecture quality; 0-5 scale. 0=mixed spaghetti, 3=clear route map and response helpers 5=immaculate structure with separate includes. PASS >=4.
+- [x] **rule TR-1.1**: Browse `/api/v1/auth/login` returns 200 JSON (even if 405 for GET method or 422 for missing fields — returns JSON envelope).
+- [x] **rule TR-1.2**: Ensure `SHOW TABLES LIKE 'api_tokens'` returns 1 row after first call to auth/login route.
+- [x] **rule TR-1.3**: CORS: `curl -X OPTIONS /api/v1/auth/login` returns HTTP 200, empty body, `Access-Control-Allow-Origin`, `Allow-Headers`, `Allow-Methods` present.
+- [x] **rule TR-1.4**: Rate limiter: 6 rapid POST calls to `/api/v1/auth/login` with same IP within 60s must return 1+ HTTP 429 response at last call (or at call #6).
+- [x] **rubric TR-1.5**: Architecture quality; 0-5 scale. 0=mixed spaghetti, 3=clear route map and response helpers 5=immaculate structure with separate includes. PASS >=4.
 
 ---
 
 ## Task 2: Auth / Session / Profile Endpoints
 
-**Status**: pending  
+**Status**: completed ✅ — GitHub Issue [#2](https://github.com/rajaiawwad-maker/MS/issues/2) CLOSED | Close evidence: comment [id=5554567539](https://github.com/rajaiawwad-maker/MS/issues/2#issuecomment-5554567539) · Implementation commit [9f890ae](https://github.com/rajaiawwad-maker/MS/commit/9f890ae) · Review commit [2dcf59e](https://github.com/rajaiawwad-maker/MS/commit/2dcf59e)
 **Priority**: high  
 **Depends On**: Task 1  
 **Files to create**:
@@ -150,17 +174,17 @@ POST   /i18n/set                        auth
 - **POST /profile/password** → old_password + new_password + confirm_password; min 8, new==confirm, old password hash check; update password_hash; auditSecurity password_changed via api audit.
 
 **Test Requirements:**
-- **rule TR-2.1**: Login POST with `{"username":"admin","password":"admin123"}` returns HTTP 200, success:true, access_token (length > 64 chars).
-- **rule TR-2.2**: wrong password returns HTTP 401 success false + error_code invalid_credentials.
-- **rule TR-2.3**: GET /auth/me with Bearer token returns user.id=1 (admin), role_name=Administrator, permissions array non-empty.
-- **rule TR-2.4**: POST /auth/logout → success=true; subsequent /auth/me call with same token returns 401.
-- **rule TR-2.5**: profile/password changes; new password < 8 returns 422 errors.new_password; wrong old password 422 errors.old_password.
+- [x] **rule TR-2.1**: Login POST with `{"username":"admin","password":"admin123"}` returns HTTP 200, success:true, access_token (length > 64 chars).
+- [x] **rule TR-2.2**: wrong password returns HTTP 401 success false + error_code invalid_credentials.
+- [x] **rule TR-2.3**: GET /auth/me with Bearer token returns user.id=1 (admin), role_name=Administrator, permissions array non-empty.
+- [x] **rule TR-2.4**: POST /auth/logout → success=true; subsequent /auth/me call with same token returns 401.
+- [x] **rule TR-2.5**: profile/password changes; new password < 8 returns 422 errors.new_password; wrong old password 422 errors.old_password.
 
 ---
 
 ## Task 3: Dashboard Endpoints
 
-**Status**: pending  
+**Status**: completed ✅ — GitHub Issue [#3](https://github.com/rajaiawwad-maker/MS/issues/3) CLOSED | Close evidence: comment [id=5554567690](https://github.com/rajaiawwad-maker/MS/issues/3#issuecomment-5554567690) · Implementation commit [9f890ae](https://github.com/rajaiawwad-maker/MS/commit/9f890ae) · Review commit [2dcf59e](https://github.com/rajaiawwad-maker/MS/commit/2dcf59e)
 **Priority**: high  
 **Depends On**: Task 2  
 **Files to create**: `api/v1/endpoints/dashboard.php`
@@ -170,14 +194,14 @@ POST   /i18n/set                        auth
 - GET /dashboard/recent_activity → audit_logs left join users ORDER BY created_at DESC page per_page.
 
 **Test Requirements:**
-- **rule TR-3.1**: with seeded sample booking data present, stats returns bookings >=0, collected, pending >=0, array structure matches.
-- **rule TR-3.2**: recent_activity returns rows with user relation (id, name, action, entity_type, created_at.
+- [x] **rule TR-3.1**: with seeded sample booking data present, stats returns bookings >=0, collected, pending >=0, array structure matches.
+- [x] **rule TR-3.2**: recent_activity returns rows with user relation (id, name, action, entity_type, created_at.
 
 ---
 
 ## Task 4: Bookings API
 
-**Status**: pending  
+**Status**: completed ✅ — GitHub Issue [#4](https://github.com/rajaiawwad-maker/MS/issues/4) CLOSED | Close evidence: comment [id=5554567839](https://github.com/rajaiawwad-maker/MS/issues/4#issuecomment-5554567839) · Implementation commit [9f890ae](https://github.com/rajaiawwad-maker/MS/commit/9f890ae) · Review commit [2dcf59e](https://github.com/rajaiawwad-maker/MS/commit/2dcf59e)
 **Priority**: high  
 **Depends On**: Task 3  
 **Files to create**: `api/v1/endpoints/bookings.php`
@@ -193,16 +217,16 @@ POST   /i18n/set                        auth
 - GET /bookings/:id/invoice → returns data object { company, booking, client, items, totals, quoted, collected, pending formatted}.
 
 **Test Requirements:**
-- **rule TR-4.1**: POST creates a booking returns 201 id booking_number.
-- **rule TR-4.2**: GET /bookings/:id returns same id nested items quantity items with item_type_id.
-- **rule TR-4.3**: Cancel POST status becomes Canceled.
-- **rule TR-4.4**: Regenerate token returns confirmation_token length 64 hex chars (32 bytes → 64).
+- [x] **rule TR-4.1**: POST creates a booking returns 201 id booking_number.
+- [x] **rule TR-4.2**: GET /bookings/:id returns same id nested items quantity items with item_type_id.
+- [x] **rule TR-4.3**: Cancel POST status becomes Canceled.
+- [x] **rule TR-4.4**: Regenerate token returns confirmation_token length 64 hex chars (32 bytes → 64).
 
 ---
 
 ## Task 5: Calendar API
 
-**Status**: pending  
+**Status**: completed ✅ — GitHub Issue [#5](https://github.com/rajaiawwad-maker/MS/issues/5) CLOSED | Close evidence: comment [id=5554568003](https://github.com/rajaiawwad-maker/MS/issues/5#issuecomment-5554568003) · Implementation commit [9f890ae](https://github.com/rajaiawwad-maker/MS/commit/9f890ae) · Review commit [2dcf59e](https://github.com/rajaiawwad-maker/MS/commit/2dcf59e)
 **Priority**: high  
 **Depends On**: Task 4  
 **Files to create**: `api/v1/endpoints/calendar.php`
@@ -212,14 +236,14 @@ POST   /i18n/set                        auth
 - GET /calendar/download/:id → returns JSON with {mime:"text/calendar", filename, ics_base64 or url. Simpler: returns ical_data string.
 
 **Test Requirements:**
-- **rule TR-5.1**: calendar returns array of at least >=0 entries; status per booking map.
-- **rule TR-5.2**: /download/:id returns ical string data; contains BEGIN:VCALENDAR when decoded/base64 decoded.
+- [x] **rule TR-5.1**: calendar returns array of at least >=0 entries; status per booking map.
+- [x] **rule TR-5.2**: /download/:id returns ical string data; contains BEGIN:VCALENDAR when decoded/base64 decoded.
 
 ---
 
 ## Task 6: Clients API + Statement
 
-**Status**: pending  
+**Status**: completed ✅ — GitHub Issue [#6](https://github.com/rajaiawwad-maker/MS/issues/6) CLOSED | Close evidence: comment [id=5554568178](https://github.com/rajaiawwad-maker/MS/issues/6#issuecomment-5554568178) · Implementation commit [9f890ae](https://github.com/rajaiawwad-maker/MS/commit/9f890ae) · Review commit [2dcf59e](https://github.com/rajaiawwad-maker/MS/commit/2dcf59e)
 **Priority**: medium  
 **Depends On**: Task 2  
 **Files to create**: `api/v1/endpoints/clients.php`
@@ -233,14 +257,14 @@ POST   /i18n/set                        auth
 - GET /clients/:id/statement → data {summary{booked,collected,pending}, recent_bookings[], recent_payments[]}.
 
 **Test Requirements:**
-- **rule TR-6.1**: /clients/:id statement returns numeric summary fields booked >=0.
-- **rule TR-6.2**: delete returns 200 and then re-GET active=0.
+- [x] **rule TR-6.1**: /clients/:id statement returns numeric summary fields booked >=0.
+- [x] **rule TR-6.2**: delete returns 200 and then re-GET active=0.
 
 ---
 
 ## Task 7: Inventory (Categories / Item Types + Availability / Inventory Items)
 
-**Status**: pending  
+**Status**: completed ✅ — GitHub Issue [#7](https://github.com/rajaiawwad-maker/MS/issues/7) CLOSED | Close evidence: comment [id=5554568338](https://github.com/rajaiawwad-maker/MS/issues/7#issuecomment-5554568338) · Implementation commit [9f890ae](https://github.com/rajaiawwad-maker/MS/commit/9f890ae) · Review commit [2dcf59e](https://github.com/rajaiawwad-maker/MS/commit/2dcf59e)
 **Priority**: high  
 **Depends On**: Task 2  
 **Files to create**:
@@ -254,15 +278,15 @@ POST   /i18n/set                        auth
 - CRUD inventory_items manage_inventory.
 
 **Test Requirements:**
-- **rule TR-7.1**: POST category returns id.
-- **rule TR-7.2**: availability returns integers >= 0 for seeded item type.
-- **rule TR-7.3**: CRUD inventory_items returns status enum one of ('Available', 'Booked', etc.).
+- [x] **rule TR-7.1**: POST category returns id.
+- [x] **rule TR-7.2**: availability returns integers >= 0 for seeded item type.
+- [x] **rule TR-7.3**: CRUD inventory_items returns status enum one of ('Available', 'Booked', etc.).
 
 ---
 
 ## Task 8: Expense Types + Expenses API
 
-**Status**: pending  
+**Status**: completed ✅ — GitHub Issue [#8](https://github.com/rajaiawwad-maker/MS/issues/8) CLOSED | Close evidence: comment [id=5554568498](https://github.com/rajaiawwad-maker/MS/issues/8#issuecomment-5554568498) · Implementation commit [9f890ae](https://github.com/rajaiawwad-maker/MS/commit/9f890ae) · Review commit [2dcf59e](https://github.com/rajaiawwad-maker/MS/commit/2dcf59e)
 **Priority**: medium  
 **Depends On**: Task 2  
 **Files to create**: `api/v1/endpoints/expenses.php`
@@ -274,14 +298,14 @@ POST   /i18n/set                        auth
 - PUT /:id, DELETE /:id.
 
 **Test Requirements:**
-- **rule TR-8.1**: POST expense creates row with created_by = current user id.
-- **rule TR-8.2**: date filter returns rows within date range.
+- [x] **rule TR-8.1**: POST expense creates row with created_by = current user id.
+- [x] **rule TR-8.2**: date filter returns rows within date range.
 
 ---
 
 ## Task 9: Payments API
 
-**Status**: pending  
+**Status**: completed ✅ — GitHub Issue [#9](https://github.com/rajaiawwad-maker/MS/issues/9) CLOSED | Close evidence: comment [id=5554568704](https://github.com/rajaiawwad-maker/MS/issues/9#issuecomment-5554568704) · Implementation commit [9f890ae](https://github.com/rajaiawwad-maker/MS/commit/9f890ae) · Review commit [2dcf59e](https://github.com/rajaiawwad-maker/MS/commit/2dcf59e)
 **Priority**: high  
 **Depends On**: Task 4 (needs bookings)  
 **Files to create**: `api/v1/endpoints/payments.php`
@@ -292,14 +316,14 @@ POST   /i18n/set                        auth
 - DELETE /payments/:id (only user own or admin, permission record_payments).
 
 **Test Requirements:**
-- **rule TR-9.1**: POST payment creates payment with booking_id, sets recalc status of booking payment_status after save.
-- **rule TR-9.2**: DELETE payment soft remove or hard remove.
+- [x] **rule TR-9.1**: POST payment creates payment with booking_id, sets recalc status of booking payment_status after save.
+- [x] **rule TR-9.2**: DELETE payment soft remove or hard remove.
 
 ---
 
 ## Task 10: Users / Roles / Permissions API
 
-**Status**: pending  
+**Status**: completed ✅ — GitHub Issue [#10](https://github.com/rajaiawwad-maker/MS/issues/10) CLOSED | Close evidence: comment [id=5554568865](https://github.com/rajaiawwad-maker/MS/issues/10#issuecomment-5554568865) · Implementation commit [9f890ae](https://github.com/rajaiawwad-maker/MS/commit/9f890ae) · Review commit [2dcf59e](https://github.com/rajaiawwad-maker/MS/commit/2dcf59e)
 **Priority**: medium  
 **Depends On**: Task 2  
 **Files to create**: `api/v1/endpoints/users.php`
@@ -315,15 +339,15 @@ POST   /i18n/set                        auth
 - GET /users/:id/permissions → array of strings.
 
 **Test Requirements:**
-- **rule TR-10.1**: create user with password <8 returns 422 validation error.
-- **rule TR-10.2**: deactivate returns active 0.
-- **rule TR-10.3**: /roles returns Administrator entry with permissions[] count == 21 (per schema).
+- [x] **rule TR-10.1**: create user with password <8 returns 422 validation error.
+- [x] **rule TR-10.2**: deactivate returns active 0.
+- [x] **rule TR-10.3**: /roles returns Administrator entry with permissions[] count == 21 (per schema).
 
 ---
 
 ## Task 11: Settings API
 
-**Status**: pending  
+**Status**: completed ✅ — GitHub Issue [#11](https://github.com/rajaiawwad-maker/MS/issues/11) CLOSED | Close evidence: comment [id=5554569059](https://github.com/rajaiawwad-maker/MS/issues/11#issuecomment-5554569059) · Implementation commit [9f890ae](https://github.com/rajaiawwad-maker/MS/commit/9f890ae) · Review commit [2dcf59e](https://github.com/rajaiawwad-maker/MS/commit/2dcf59e)
 **Priority**: low  
 **Depends On**: Task 2  
 **Files to create**: `api/v1/endpoints/settings.php`
@@ -333,14 +357,14 @@ POST   /i18n/set                        auth
 - PUT /settings body object with pairs upsert via INSERT ON DUPLICATE KEY UPDATE; validate keys from whitelist or allow any with sanitize alphanumeric.
 
 **Test Requirements:**
-- **rule TR-11.1**: GET returns company_name string with length >=1.
-- **rule TR-11.2**: PUT updates a new value and second GET reflects it.
+- [x] **rule TR-11.1**: GET returns company_name string with length >=1.
+- [x] **rule TR-11.2**: PUT updates a new value and second GET reflects it.
 
 ---
 
 ## Task 12: Audit Logs & Global Search & i18n endpoints
 
-**Status**: pending  
+**Status**: completed ✅ — GitHub Issue [#12](https://github.com/rajaiawwad-maker/MS/issues/12) CLOSED | Close evidence: comment [id=5554569217](https://github.com/rajaiawwad-maker/MS/issues/12#issuecomment-5554569217) · Implementation commit [9f890ae](https://github.com/rajaiawwad-maker/MS/commit/9f890ae) · Review commit [2dcf59e](https://github.com/rajaiawwad-maker/MS/commit/2dcf59e)
 **Priority**: medium  
 **Depends On**: Task 2  
 **Files to create**: `api/v1/endpoints/misc.php`
@@ -352,14 +376,14 @@ POST   /i18n/set                        auth
 - POST /i18n/set (if future mobile user lang preference per token field). Currently just returns 200 ok message current lang.
 
 **Test Requirements:**
-- **rule TR-12.1**: search returns array with distinct entity types.
-- **rule TR-12.2**: /i18n/en JSON parse success and contains at least 500 keys.
+- [x] **rule TR-12.1**: search returns array with distinct entity types.
+- [x] **rule TR-12.2**: /i18n/en JSON parse success and contains at least 500 keys.
 
 ---
 
 ## Task 13: Reports Endpoints (Bookings, Financial, Expenses, Inventory, Client Statement + CSV)
 
-**Status**: pending  
+**Status**: completed ✅ — GitHub Issue [#13](https://github.com/rajaiawwad-maker/MS/issues/13) CLOSED | Close evidence: comment [id=5554569379](https://github.com/rajaiawwad-maker/MS/issues/13#issuecomment-5554569379) · Implementation commit [9f890ae](https://github.com/rajaiawwad-maker/MS/commit/9f890ae) · Review commit [2dcf59e](https://github.com/rajaiawwad-maker/MS/commit/2dcf59e)
 **Priority**: high  
 **Depends On**: Tasks 4, 8, 9, 6 (booking data, payments, expenses, clients)  
 **Files to create**: `api/v1/endpoints/reports.php`
@@ -373,15 +397,15 @@ POST   /i18n/set                        auth
 - GET /reports/client-statement/:id rows + summary; pagination? No simple.
 
 **Test Requirements:**
-- **rule TR-13.1**: financial-summary returns JSON numeric keys.
-- **rule TR-13.2**: CSV export base64 decoded opens as valid CSV with header row.
-- **rule TR-13.3**: client statement returns summary with numeric totals.
+- [x] **rule TR-13.1**: financial-summary returns JSON numeric keys.
+- [x] **rule TR-13.2**: CSV export base64 decoded opens as valid CSV with header row.
+- [x] **rule TR-13.3**: client statement returns summary with numeric totals.
 
 ---
 
 ## Task 14: Public Confirmation Endpoint (no auth)
 
-**Status**: pending  
+**Status**: completed ✅ — GitHub Issue [#14](https://github.com/rajaiawwad-maker/MS/issues/14) CLOSED | Close evidence: comment [id=5554569510](https://github.com/rajaiawwad-maker/MS/issues/14#issuecomment-5554569510) · Implementation commit [9f890ae](https://github.com/rajaiawwad-maker/MS/commit/9f890ae) · Review commit [2dcf59e](https://github.com/rajaiawwad-maker/MS/commit/2dcf59e)
 **Priority**: high  
 **Depends On**: Task 1 (routing) + Task 4 (bookings model)  
 **Files to create**: `api/v1/endpoints/public.php`
@@ -391,15 +415,15 @@ POST   /i18n/set                        auth
 - POST /public/confirm/:token body {action:confirm|change|decline}. idempotency. Same rules as confirm.php. 400 on unknown action, 200 with updated status info.
 
 **Test Requirements:**
-- **rule TR-14.1**: Random invalid token returns 404 success false.
-- **rule TR-14.2**: POST confirm on a booking sets customer_confirmed_at and status='Confirmed'. Two calls idempotent (no error, response same).
-- **rule TR-14.3**: Change/Decline actions set correct response enum.
+- [x] **rule TR-14.1**: Random invalid token returns 404 success false.
+- [x] **rule TR-14.2**: POST confirm on a booking sets customer_confirmed_at and status='Confirmed'. Two calls idempotent (no error, response same).
+- [x] **rule TR-14.3**: Change/Decline actions set correct response enum.
 
 ---
 
 ## Task 15: CORS + Rate Limiter (final polish + hardening) + PHP Syntax Check
 
-**Status**: pending  
+**Status**: completed ✅ — GitHub Issue [#15](https://github.com/rajaiawwad-maker/MS/issues/15) CLOSED | Close evidence: comment [id=5554569684](https://github.com/rajaiawwad-maker/MS/issues/15#issuecomment-5554569684) · Implementation commit [9f890ae](https://github.com/rajaiawwad-maker/MS/commit/9f890ae) · Review commit [2dcf59e](https://github.com/rajaiawwad-maker/MS/commit/2dcf59e)
 **Priority**: medium  
 **Depends On**: Tasks 1-14  
 **Files to create**:
@@ -411,14 +435,14 @@ POST   /i18n/set                        auth
 - **Syntax Lint all new PHP files** — php -l all api/**/*.php.
 
 **Test Requirements:**
-- **rule TR-15.1**: Syntax check all PHP files zero errors.
-- **rule TR-15.2**: /api/v1/ nonexistent route → JSON 404 {success:false,message:"Not found",error_code:"not_found"}.
+- [x] **rule TR-15.1**: Syntax check all PHP files zero errors.
+- [x] **rule TR-15.2**: /api/v1/ nonexistent route → JSON 404 {success:false,message:"Not found",error_code:"not_found"}.
 
 ---
 
 ## Task 16: Postman Collection v2.1 + Environment files
 
-**Status**: pending  
+**Status**: completed ✅ — GitHub Issue [#16](https://github.com/rajaiawwad-maker/MS/issues/16) CLOSED | Close evidence: comment [id=5554569829](https://github.com/rajaiawwad-maker/MS/issues/16#issuecomment-5554569829) · Implementation commit [9f890ae](https://github.com/rajaiawwad-maker/MS/commit/9f890ae) · Review commit [2dcf59e](https://github.com/rajaiawwad-maker/MS/commit/2dcf59e)
 **Priority**: high  
 **Depends On**: Tasks 1-15 (all endpoints exist)  
 **Files to create**:
@@ -434,16 +458,16 @@ POST   /i18n/set                        auth
   - 6) For sad paths: `success === false` + HTTP status 4xx.
 
 **Test Requirements:**
-- **rule TR-16.1**: Both JSON files parse via json_last_error() === JSON_ERROR_NONE.
-- **rule TR-16.2**: Collection info.schema matches Postman v2.1 schema URL.
-- **rule TR-16.3**: Total requests in collection >= 50 (approximate 1+ per endpoint).
-- **rubric TR-16.4**: Postman quality: organized folders, clean descriptions, environment file with all required variables, tests assertions meaningful (not just `pm.test("ok")`. PASS >=4/5.
+- [x] **rule TR-16.1**: Both JSON files parse via json_last_error() === JSON_ERROR_NONE.
+- [x] **rule TR-16.2**: Collection info.schema matches Postman v2.1 schema URL.
+- [x] **rule TR-16.3**: Total requests in collection >= 50 (approximate 1+ per endpoint).
+- [x] **rubric TR-16.4**: Postman quality: organized folders, clean descriptions, environment file with all required variables, tests assertions meaningful (not just `pm.test("ok")`. PASS >=4/5.
 
 ---
 
 ## Task 17: API Documentation (API_DOCUMENTATION.md)
 
-**Status**: pending  
+**Status**: completed ✅ — GitHub Issue [#17](https://github.com/rajaiawwad-maker/MS/issues/17) CLOSED | Close evidence: comment [id=5554569992](https://github.com/rajaiawwad-maker/MS/issues/17#issuecomment-5554569992) · Implementation commit [9f890ae](https://github.com/rajaiawwad-maker/MS/commit/9f890ae) · Review commit [2dcf59e](https://github.com/rajaiawwad-maker/MS/commit/2dcf59e)
 **Priority**: high  
 **Depends On**: Tasks 1-16  
 **Files to create**:
@@ -456,18 +480,22 @@ POST   /i18n/set                        auth
   - 6. Troubleshooting: CORS, 401, 403, 422, 500.
 
 **Test Requirements:**
-- **rule TR-17.1**: File exists and length > 5KB.
-- **rule TR-17.2**: Contains all 20+ endpoint URL patterns with HTTP method.
-- **rule TR-17.3**: Has 5+ curl examples (login, booking list, create booking, cancel booking, report csv).
-- **rubric TR-17.4**: Documentation quality; PASS >=4/5 (readability, examples, completeness).
+- [x] **rule TR-17.1**: File exists and length > 5KB.
+- [x] **rule TR-17.2**: Contains all 20+ endpoint URL patterns with HTTP method.
+- [x] **rule TR-17.3**: Has 5+ curl examples (login, booking list, create booking, cancel booking, report csv).
+- [x] **rubric TR-17.4**: Documentation quality; PASS >=4/5 (readability, examples, completeness).
 
 ---
 
-## Review Phase Checklist (Independent)
+## Review Phase Checklist (Independent) ✅ COMPLETED
 
-Performed by independent reviewer in review.md.
-- AC-1 AC-20 all re-checked with actual curl call or simulated PHP verification.
-- Check security: no password in response, tokens hashed, errors generic, rate limit kicks in, permission 403 correct.
-- Postman syntax JSON parse valid.
-- Docs has all endpoints mentioned with method.
-- PHP syntax check all files again, no errors.
+**Performed**: 2026-09-05 via independent automated readonly review.
+**Artifact**: [review.md](https://github.com/rajaiawwad-maker/MS/blob/2dcf59e/.trae/specs/api_mobile_app_20260905/review.md) (559 lines, SHA `2dcf59e`)
+**Result**: ✅ 20/20 AC PASS, ✅ 36/36 TR PASS, ✅ 0 security critical/blocking
+
+**Checked items (all verified with evidence)**:
+- [x] AC-1 through AC-20 re-checked (AC-1 login, AC-2 401 unauth, AC-3 403 perm, AC-4 tokens, AC-5 dashboard, AC-6 bookings detail nested, AC-7 cancel, AC-8 public-confirm idempotent, AC-9 CSV base64, AC-10 users deactivate, AC-11 profile/password errors, AC-12 envelope, AC-13 i18n JSON, AC-14 Postman, AC-15 code quality 5/5, AC-16 docs quality 5/5, AC-17 php -l 22/22, AC-18 CORS, AC-19 429 rate-limit, AC-20 logout revoke)
+- [x] Security audit: bcrypt password hashes never in responses, token sha256-hashed storage (raw never stored), catch(Exception) generic messages, rate limit kicks at 5 attempts, 403 for every permission violation
+- [x] Postman JSON parse valid (both files JSON_ERROR_NONE), info.schema exact v2.1 URL, env 14 vars, collection pre-request auto-login script present
+- [x] API_DOCUMENTATION.md documents all 72 endpoints with method/perm/curl
+- [x] PHP syntax check all 22 api/**/*.php files → 0 errors exit-code 0
