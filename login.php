@@ -7,7 +7,9 @@ if (isLoggedIn()) {
 
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    validate_csrf();
     $username = trim($_POST['username'] ?? '');
+    enforce_login_throttle($username);
     $password = $_POST['password'] ?? '';
     $remember = isset($_POST['remember']);
 
@@ -26,11 +28,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $token = generateToken(40);
                 $expire = time() + (86400 * 30);
             }
+            session_regenerate_id(true);
+            reset_login_attempts($username);
             redirect(SITE_URL . '/index.php');
         } else {
+            record_failed_login($username);
             $error = t('auth.invalid');
         }
     } else {
+        record_failed_login($username);
         $error = t('msg.login_fill_fields');
     }
 }
@@ -44,9 +50,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <?php if (IS_RTL): ?>
     <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/rtl.css">
-    <style> html[dir="rtl"] body { font-family: 'Tahoma', 'Segoe UI', 'Arial', sans-serif; } </style>
+    <style nonce="<?= csp_nonce() ?>"> html[dir="rtl"] body { font-family: 'Tahoma', 'Segoe UI', 'Arial', sans-serif; } </style>
     <?php endif; ?>
-    <style>
+    <style nonce="<?= csp_nonce() ?>">
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
@@ -130,6 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="alert alert-danger"><?= e($error) ?></div>
                         <?php endif; ?>
                         <form method="POST" action="<?= e($_SERVER['PHP_SELF']) ?>">
+                            <?php csrf_field(); ?>
                             <div class="form-group">
                                 <label class="font-weight-semibold"><?= t('login.username_or_email') ?></label>
                                 <div class="input-group input-group-lg">

@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             setFlash('error', t('u.create_required'));
             redirect(SITE_URL.'/users.php');
         }
-        if (strlen($password) < 6) { setFlash('error', t('u.password_min')); redirect(SITE_URL.'/users.php'); }
+        if (strlen($password) < 8) { setFlash('error', t('u.password_min')); redirect(SITE_URL.'/users.php'); }
         $hash = password_hash($password, PASSWORD_DEFAULT);
         try {
             $stmt = $conn->prepare("INSERT INTO users (name, username, email, password_hash, role_id, phone, active) VALUES (?,?,?,?,?,?,?)");
@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $updates = "name=?, username=?, email=?, role_id=?, phone=?, active=?";
         $params = [$name, $username, $email, $roleId, $phone, $active];
         if ($password !== '') {
-            if (strlen($password) < 6) { setFlash('error', t('u.password_min')); redirect(SITE_URL.'/users.php'); }
+            if (strlen($password) < 8) { setFlash('error', t('u.password_min')); redirect(SITE_URL.'/users.php'); }
             $updates .= ", password_hash=?";
             $params[] = password_hash($password, PASSWORD_DEFAULT);
         }

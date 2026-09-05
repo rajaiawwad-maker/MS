@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/config.php';
-header('Content-Type: application/json');
+header('X-Content-Type-Options: nosniff');
+header('Content-Type: application/json; charset=utf-8');
 
 $out = ['ok' => false, 'total' => 0, 'booked' => 0, 'available' => 0];
 if (!isLoggedIn()) { echo json_encode($out); exit; }

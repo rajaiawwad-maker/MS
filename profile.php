@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $conn->prepare("SELECT password_hash FROM users WHERE id = ?"); $stmt->execute([$userId]);
         $hash = $stmt->fetchColumn();
         if (!password_verify($cur, $hash)) { setFlash('error', t('profile.current_password_incorrect')); }
-        elseif (strlen($new) < 6) { setFlash('error', t('profile.new_password_min')); }
+        elseif (strlen($new) < 8) { setFlash('error', t('profile.new_password_min')); }
         elseif ($new !== $conf) { setFlash('error', t('profile.passwords_mismatch')); }
         else {
             $conn->prepare("UPDATE users SET password_hash=?, updated_at=NOW() WHERE id=?")->execute([password_hash($new, PASSWORD_DEFAULT), $userId]);
@@ -73,8 +73,8 @@ echo flashMessages();
                 <form method="POST">
                     <input type="hidden" name="action" value="password">
                     <div class="form-group"><label><?= te('profile.current_password') ?></label><input type="password" required name="current_password" class="form-control"></div>
-                    <div class="form-group"><label><?= te('profile.new_password') ?></label><input type="password" required name="new_password" class="form-control" minlength="6"></div>
-                    <div class="form-group"><label><?= te('profile.confirm_new_password') ?></label><input type="password" required name="confirm_password" class="form-control" minlength="6"></div>
+                    <div class="form-group"><label><?= te('profile.new_password') ?></label><input type="password" required name="new_password" class="form-control" minlength="8"></div>
+                    <div class="form-group"><label><?= te('profile.confirm_new_password') ?></label><input type="password" required name="confirm_password" class="form-control" minlength="8"></div>
                     <button type="submit" class="btn btn-primary"><i class="fas fa-key mr-1"></i> <?= te('profile.change_password_btn') ?></button>
                 </form>
             </div>

@@ -42,6 +42,7 @@ $summary = t('cf.ics_summary_prefix') . ' - ' . $b['client_name'];
 $description = t('cf.ics_booking_label') . ': ' . $b['booking_number'] . "\\n" . t('cf.ics_client_label') . ': ' . $b['client_name'] . "\\n" . t('cf.ics_phone_label') . ': ' . $b['client_phone'] . "\\n\\n" . t('cf.ics_equipment_label') . ":\\n" . $items . "\\n\\n" . t('cf.ics_total_label') . ': ' . formatMoney($b['quoted_amount']) . "\\n\\n" . $companyName;
 $location = $b['location'];
 
+header('X-Content-Type-Options: nosniff');
 header('Content-Type: text/calendar; charset=utf-8');
 header('Content-Disposition: attachment; filename="Booking_' . $b['booking_number'] . '.ics"');
 echo "BEGIN:VCALENDAR\r\n";

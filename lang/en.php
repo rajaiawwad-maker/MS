@@ -550,7 +550,7 @@ return [
     'u.username_exists'        => 'Username already exists.',
     'u.cannot_delete_self'     => 'You cannot delete your own account.',
     'u.profile_update_success' => 'Profile updated successfully.',
-    'u.password_min'           => 'Password must be at least 6 characters.',
+    'u.password_min'           => 'Password must be at least 8 characters.',
     'u.password_mismatch'      => 'Passwords do not match.',
     'u.current_password_wrong' => 'Current password is incorrect.',
     'u.password_change_success'=> 'Password changed successfully.',
@@ -718,7 +718,7 @@ return [
     // ====== PROFILE ADDITIONAL ======
     'profile.info_title'       => 'Profile Information',
     'profile.last_login'       => 'Last Login',
-    'profile.new_password_hint'=> 'New Password (min 6 chars)',
+    'profile.new_password_hint'=> 'New Password (min 8 chars)',
     'profile.name_username_required' => 'Name and Username are required',
 
     // ====== BUTTONS ADDITIONAL ======
@@ -834,7 +834,7 @@ return [
     // ====== PROFILE ADDITIONAL ======
     'profile.manage_account'  => 'Manage your account',
     'profile.current_password_incorrect' => 'Current password incorrect',
-    'profile.new_password_min' => 'New password must be at least 6 characters',
+    'profile.new_password_min' => 'New password must be at least 8 characters',
     'profile.password_changed'    => 'Password changed',
     'profile.profile_updated' => 'Profile updated',
 
@@ -854,7 +854,7 @@ return [
     'profile.profile_information' => 'Profile Information',
     'profile.change_password'  => 'Change Password',
     'profile.current_password' => 'Current Password',
-    'profile.new_password'    => 'New Password (min 6 chars)',
+    'profile.new_password'    => 'New Password (min 8 chars)',
     'profile.confirm_new_password' => 'Confirm New Password',
     'profile.change_password_btn' => 'Change Password',
     'profile.update_profile'   => 'Update Profile',

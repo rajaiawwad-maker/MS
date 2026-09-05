@@ -1,6 +1,14 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+$_configPath = __DIR__ . '/config.php';
+if (file_exists($_configPath) && is_file($_configPath)) {
+    require_once $_configPath;
+    if (defined('DB_NAME') && DB_NAME !== '' && defined('DB_USER') && DB_USER !== '') {
+        if (function_exists('auditSecurity')) auditSecurity('install_access');
+        $siteUrl = defined('SITE_URL') ? SITE_URL : './';
+        header('Location: ' . $siteUrl . '/login.php');
+        exit;
+    }
+}
 $page = $_GET['step'] ?? 'check';
 $root = __DIR__;
 $configPath = $root . '/config.php';
@@ -25,10 +33,14 @@ $writable = is_writable($root) || is_writable(__DIR__ . '/uploads');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($page === 'config') {
+        $identRegex = '/^[A-Za-z0-9_\-\.]+$/';
         $dbHost = trim($_POST['db_host'] ?? 'localhost');
         $dbUser = trim($_POST['db_user'] ?? 'root');
         $dbPass = $_POST['db_pass'] ?? '';
         $dbName = trim($_POST['db_name'] ?? 'dj_rak_system');
+        if (!preg_match($identRegex, $dbHost) || !preg_match($identRegex, $dbUser) || !preg_match($identRegex, $dbName)) {
+            $errors[] = "Invalid host, user, or database name. Only letters, numbers, underscore, dash, and dot are allowed.";
+        }
 
         try {
             $tmp = new PDO("mysql:host=$dbHost;charset=utf8mb4", $dbUser, $dbPass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
@@ -79,7 +91,7 @@ loadSystemSettings();
             header('Location: install.php?step=schema');
             exit;
         } catch (Exception $e) {
-            $errors[] = "Database connection failed: " . $e->getMessage();
+            $errors[] = "Database connection failed. Please check your credentials and review the server error log for details.";
         }
     } elseif ($page === 'schema') {
         require_once $configPath;
@@ -101,7 +113,7 @@ loadSystemSettings();
             header('Location: install.php?step=done');
             exit;
         } catch (Exception $e) {
-            $errors[] = "Error: " . $e->getMessage();
+            $errors[] = "Schema installation failed. Please review the server error log for details.";
         }
     }
 }

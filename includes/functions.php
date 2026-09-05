@@ -471,3 +471,194 @@ function buildPendingBalanceWhatsAppI18n($client, $pendingAmount) {
     return $intro . "\n*" . formatMoney($pendingAmount) . "*\n" . t('wa.pending_msg_thanks');
 }
 
+/* ========================================================================
+ * OWASP Top 10 — Core Security Helpers
+ * ====================================================================== */
+
+function csrf_token() {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = generateToken(32);
+    }
+    return $_SESSION['csrf_token'];
+}
+
+function csrf_field() {
+    echo '<input type="hidden" name="csrf_token" value="' . e(csrf_token()) . '">';
+}
+
+function validate_csrf($redirect = true) {
+    $sent = $_POST['csrf_token'] ?? $_GET['csrf_token'] ?? '';
+    $expected = $_SESSION['csrf_token'] ?? '';
+    if ($expected === '' || !is_string($sent) || $sent === '' || !hash_equals($expected, $sent)) {
+        auditSecurity('invalid_csrf', [
+            'method' => $_SERVER['REQUEST_METHOD'] ?? '',
+            'uri'    => $_SERVER['REQUEST_URI'] ?? '',
+        ]);
+        if ($redirect) {
+            if (!headers_sent()) {
+                http_response_code(403);
+            }
+            setFlash('error', t('err.csrf_invalid') ?: 'Security check failed. Please refresh and try again.');
+            $back = $_SERVER['HTTP_REFERER'] ?? (SITE_URL . '/index.php');
+            $backHost = parse_url($back, PHP_URL_HOST);
+            $siteHost = parse_url(SITE_URL, PHP_URL_HOST);
+            if ($backHost !== null && $siteHost !== null && strcasecmp($backHost, $siteHost) !== 0) {
+                $back = SITE_URL . '/index.php';
+            }
+            redirect($back);
+        }
+        return false;
+    }
+    return true;
+}
+
+function emit_security_headers() {
+    if (php_sapi_name() === 'cli' || headers_sent()) return;
+
+    $nonce = bin2hex(random_bytes(16));
+    $GLOBALS['CSP_NONCE'] = $nonce;
+
+    header('X-Frame-Options: SAMEORIGIN');
+    header('X-Content-Type-Options: nosniff');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+    header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
+
+    $isHttps =
+        (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443)
+        || (strpos(SITE_URL, 'https://') === 0);
+    if ($isHttps) {
+        header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+    }
+
+    $csp = [
+        "default-src 'self'",
+        "script-src 'self' 'nonce-{$nonce}' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com cdnjs.cloudflare.com",
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com cdnjs.cloudflare.com",
+        "img-src 'self' data: https:",
+        "font-src 'self' https://cdnjs.cloudflare.com cdnjs.cloudflare.com data:",
+        "connect-src 'self'",
+        "frame-ancestors 'self'",
+        "base-uri 'self'",
+        "form-action 'self'",
+        "object-src 'none'",
+    ];
+    header('Content-Security-Policy: ' . implode('; ', $csp));
+}
+
+function csp_nonce() {
+    if (empty($GLOBALS['CSP_NONCE'])) {
+        $GLOBALS['CSP_NONCE'] = bin2hex(random_bytes(16));
+    }
+    return $GLOBALS['CSP_NONCE'];
+}
+
+function auditSecurity($action, $detail = []) {
+    global $conn;
+    if (!$conn) return;
+    $userId = (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) ? $_SESSION['user_id'] : null;
+    $ip = $_SERVER['REMOTE_ADDR'] ?? null;
+    $ua = $_SERVER['HTTP_USER_AGENT'] ?? null;
+    $newVal = !empty($detail) ? json_encode($detail, JSON_UNESCAPED_UNICODE) : null;
+    try {
+        $stmt = $conn->prepare("INSERT INTO audit_logs (user_id, action, entity_type, entity_id, new_value, ip_address, user_agent, created_at) VALUES (?, ?, 'SecurityEvent', NULL, ?, ?, ?, NOW())");
+        $stmt->execute([$userId, $action, $newVal, $ip, $ua]);
+    } catch (Exception $e) {
+    }
+}
+
+function ensure_login_attempts_table() {
+    global $conn;
+    if (!$conn) return;
+    static $ensured = false;
+    if ($ensured) return;
+    try {
+        $conn->exec("CREATE TABLE IF NOT EXISTS login_attempts (
+            username VARCHAR(150) NOT NULL,
+            ip_address VARCHAR(45) NOT NULL,
+            attempts INT(11) NOT NULL DEFAULT 1,
+            last_attempt_at DATETIME NOT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (username, ip_address)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        $ensured = true;
+    } catch (Exception $e) {}
+}
+
+function record_failed_login($username) {
+    global $conn;
+    ensure_login_attempts_table();
+    if (!$conn || $username === '') return;
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+    try {
+        $stmt = $conn->prepare("INSERT INTO login_attempts (username, ip_address, attempts, last_attempt_at) VALUES (?, ?, 1, NOW())
+            ON DUPLICATE KEY UPDATE attempts = attempts + 1, last_attempt_at = NOW()");
+        $stmt->execute([$username, $ip]);
+    } catch (Exception $e) {}
+    auditSecurity('failed_login', ['username' => $username]);
+}
+
+function reset_login_attempts($username) {
+    global $conn;
+    ensure_login_attempts_table();
+    if (!$conn || $username === '') return;
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+    try {
+        $stmt = $conn->prepare("DELETE FROM login_attempts WHERE username = ? AND ip_address = ?");
+        $stmt->execute([$username, $ip]);
+    } catch (Exception $e) {}
+}
+
+function enforce_login_throttle($username) {
+    global $conn;
+    ensure_login_attempts_table();
+    if (!$conn || $username === '') return;
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+    $attempts = 0;
+    try {
+        $stmt = $conn->prepare("SELECT attempts FROM login_attempts WHERE username = ? AND ip_address = ?");
+        $stmt->execute([$username, $ip]);
+        $row = $stmt->fetch();
+        $attempts = (int)($row['attempts'] ?? 0);
+    } catch (Exception $e) {}
+    if ($attempts > 3) {
+        $exponent = max(0, $attempts - 3);
+        $delay = min(15, pow(2, $exponent));
+        sleep((int)$delay);
+    }
+}
+
+function destroy_session() {
+    $_SESSION = [];
+    if (ini_get('session.use_cookies')) {
+        $params = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000,
+            $params['path'], $params['domain'],
+            $params['secure'], $params['httponly']
+        );
+    }
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_destroy();
+    }
+    @session_start();
+    session_regenerate_id(true);
+}
+
+function enforce_session_timeout() {
+    if (!isset($_SESSION['user_id']) || empty($_SESSION['user_id'])) return;
+    $timeout = defined('SESSION_TIMEOUT') ? (int)SESSION_TIMEOUT : 3600;
+    $now = time();
+    $loginAge = isset($_SESSION['login_time']) ? ($now - (int)$_SESSION['login_time']) : 0;
+    if (!isset($_SESSION['last_activity'])) {
+        $_SESSION['last_activity'] = $now;
+    }
+    $idleAge = $now - (int)$_SESSION['last_activity'];
+    if ($loginAge > $timeout || $idleAge > $timeout) {
+        auditSecurity('session_timeout');
+        destroy_session();
+        setFlash('error', t('err.session_timeout') ?: 'Your session has timed out. Please log in again.');
+        redirect(SITE_URL . '/login.php');
+    }
+    $_SESSION['last_activity'] = $now;
+}
+

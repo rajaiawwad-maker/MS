@@ -55,6 +55,11 @@ $categories = $conn->query("SELECT id, name FROM categories WHERE active=1 ORDER
 $itemTypes = $conn->query("SELECT it.id, it.name, c.name as cat_name FROM item_types it INNER JOIN categories c ON it.category_id = c.id WHERE it.active=1 ORDER BY c.name, it.name")->fetchAll();
 
 if (isset($_GET['export']) && $_GET['export'] === 'csv') {
+    if (!headers_sent()) {
+        header('X-Content-Type-Options: nosniff');
+        header('X-Frame-Options: SAMEORIGIN');
+        header('Referrer-Policy: strict-origin-when-cross-origin');
+    }
     header('Content-Type: text/csv; charset=utf-8');
     header('Content-Disposition: attachment; filename="bookings_report_'.date('Ymd').'.csv"');
     header('Pragma: no-cache');

@@ -545,7 +545,7 @@ return [
     'u.username_exists'        => 'اسم المستخدم موجود مسبقاً.',
     'u.cannot_delete_self'     => 'لا يمكنك حذف حسابك الشخصي.',
     'u.profile_update_success' => 'تم تحديث الملف الشخصي بنجاح.',
-    'u.password_min'           => 'كلمة المرور يجب أن تكون 6 أحرف على الأقل.',
+    'u.password_min'           => 'كلمة المرور يجب أن تكون 8 أحرف على الأقل.',
     'u.password_mismatch'      => 'كلمتا المرور غير متطابقتين.',
     'u.current_password_wrong' => 'كلمة المرور الحالية غير صحيحة.',
     'u.password_change_success'=> 'تم تغيير كلمة المرور بنجاح.',
@@ -743,7 +743,7 @@ return [
     // ====== PROFILE ADDITIONAL ======
     'profile.manage_account'  => 'إدارة حسابك',
     'profile.current_password_incorrect' => 'كلمة المرور الحالية غير صحيحة',
-    'profile.new_password_min' => 'كلمة المرور الجديدة 6 أحرف على الأقل',
+    'profile.new_password_min' => 'كلمة المرور الجديدة 8 أحرف على الأقل',
     'profile.password_changed'    => 'تم تغيير كلمة المرور',
     'profile.profile_updated' => 'تم تحديث الملف الشخصي',
 
@@ -763,7 +763,7 @@ return [
     'profile.profile_information' => 'بيانات الملف الشخصي',
     'profile.change_password'  => 'تغيير كلمة المرور',
     'profile.current_password' => 'كلمة المرور الحالية',
-    'profile.new_password'    => 'كلمة المرور الجديدة (6 أحرف كحد أدنى)',
+    'profile.new_password'    => 'كلمة المرور الجديدة (8 أحرف كحد أدنى)',
     'profile.confirm_new_password' => 'تأكيد كلمة المرور الجديدة',
     'profile.change_password_btn' => 'تغيير كلمة المرور',
     'profile.update_profile'   => 'تحديث الملف الشخصي',
