@@ -1,0 +1,128 @@
+html[dir="rtl"] body { font-family: 'Tahoma', 'Segoe UI', 'Arial', sans-serif; }
+
+html[dir="rtl"] #sidebar::before { left: auto; right: 0; }
+html[dir="rtl"] #sidebar ul ul::before {
+    right: 24px; left: auto;
+    border-right: 1px dashed #475569; border-left: none;
+}
+html[dir="rtl"] #sidebar ul ul li a::before {
+    right: 24px; left: auto;
+}
+html[dir="rtl"] #sidebar ul ul li a { padding: 10px 48px 10px 20px; }
+html[dir="rtl"] #sidebar .nav-caret { margin-left: 0; margin-right: auto; }
+html[dir="rtl"] #sidebar .nav-caret i { transform: rotate(180deg); }
+html[dir="rtl"] #sidebar .nav-caret i.fa-chevron-down { transform: rotate(180deg); }
+html[dir="rtl"] #sidebar .nav-icon { margin-right: 0; margin-left: 12px; }
+html[dir="rtl"] #sidebar .dropdown-toggle::after { margin-right: auto; margin-left: 0; }
+html[dir="rtl"] #sidebar .sidebar-footer .user-logout { margin-right: auto; margin-left: 0; }
+html[dir="rtl"] #sidebar .sidebar-footer .user-logout i { transform: scaleX(-1); }
+
+html[dir="rtl"] #sidebar .brand-icon { margin-right: 0; margin-left: 12px; }
+html[dir="rtl"] #sidebar .brand-text { text-align: right; direction: rtl; }
+
+html[dir="rtl"] .btn-sidebar-toggle { margin-right: 0 !important; margin-left: 0.5rem !important; }
+html[dir="rtl"] .btn-sidebar-toggle i { transform: scaleX(-1); }
+
+html[dir="rtl"] .navbar .mr-auto { margin-right: 0 !important; margin-left: auto !important; }
+html[dir="rtl"] .navbar .ml-auto { margin-left: 0 !important; margin-right: auto !important; }
+html[dir="rtl"] .navbar .ml-md-3 { margin-left: 0 !important; margin-right: 1rem !important; }
+html[dir="rtl"] .navbar .mr-1,
+html[dir="rtl"] .navbar .mr-2 { margin-right: 0 !important; }
+html[dir="rtl"] .navbar .mr-1 { margin-left: 0.25rem !important; }
+html[dir="rtl"] .navbar .mr-2 { margin-left: 0.5rem !important; }
+html[dir="rtl"] .navbar .ml-1 { margin-left: 0 !important; margin-right: 0.25rem !important; }
+html[dir="rtl"] .navbar .dropdown-menu-right { right: auto !important; left: 0 !important; float: left !important; }
+html[dir="rtl"] .navbar .dropdown-menu .mr-2 { margin-right: 0 !important; margin-left: 0.5rem !important; }
+
+html[dir="rtl"] .input-group > .input-group-prepend > .btn,
+html[dir="rtl"] .input-group > .input-group-prepend > .input-group-text,
+html[dir="rtl"] .input-group > .input-group-append:not(:last-child) > .btn,
+html[dir="rtl"] .input-group > .input-group-append:not(:last-child) > .input-group-text,
+html[dir="rtl"] .input-group > .input-group-append:last-child > .btn:not(:last-child):not(.dropdown-toggle),
+html[dir="rtl"] .input-group > .input-group-append:last-child > .input-group-text:not(:last-child) {
+    border-top-right-radius: 0.25rem;
+    border-bottom-right-radius: 0.25rem;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+html[dir="rtl"] .input-group > .input-group-append > .btn,
+html[dir="rtl"] .input-group > .input-group-append > .input-group-text,
+html[dir="rtl"] .input-group > .input-group-prepend:not(:first-child) > .btn,
+html[dir="rtl"] .input-group > .input-group-prepend:not(:first-child) > .input-group-text,
+html[dir="rtl"] .input-group > .input-group-prepend:first-child > .btn:not(:first-child),
+html[dir="rtl"] .input-group > .input-group-prepend:first-child > .input-group-text:not(:first-child) {
+    border-top-left-radius: 0.25rem;
+    border-bottom-left-radius: 0.25rem;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+html[dir="rtl"] .input-group > .custom-select:not(:first-child),
+html[dir="rtl"] .input-group > .form-control:not(:first-child) {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+html[dir="rtl"] .input-group > .custom-select:not(:last-child),
+html[dir="rtl"] .input-group > .form-control:not(:last-child) {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+html[dir="rtl"] table th,
+html[dir="rtl"] table td { text-align: right; }
+
+html[dir="rtl"] .kpi-card .kpi-label,
+html[dir="rtl"] .kpi-card .kpi-value,
+html[dir="rtl"] .kpi-card .kpi-change { text-align: right; }
+html[dir="rtl"] .kpi-card .kpi-icon { float: left; margin-right: 0; margin-left: 0; }
+
+html[dir="rtl"] .float-left { float: right !important; }
+html[dir="rtl"] .float-right { float: left !important; }
+
+html[dir="rtl"] .text-left { text-align: right !important; }
+html[dir="rtl"] .text-right { text-align: left !important; }
+
+html[dir="rtl"] .modal-header .close { margin: -1rem auto -1rem -1rem; padding: 1rem 0 1rem 1rem; }
+
+html[dir="rtl"] .breadcrumb-item + .breadcrumb-item::before { padding-right: 0.5rem; padding-left: 0.5rem; }
+
+html[dir="rtl"] ul.pagination { direction: rtl; }
+html[dir="rtl"] .pagination .page-item:first-child .page-link {
+    border-top-left-radius: 0.25rem;
+    border-bottom-left-radius: 0.25rem;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+html[dir="rtl"] .pagination .page-item:last-child .page-link {
+    border-top-right-radius: 0.25rem;
+    border-bottom-right-radius: 0.25rem;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+html[dir="rtl"] .select2-container--bootstrap .select2-selection--single .select2-selection__arrow { right: auto; left: 6px; }
+html[dir="rtl"] .select2-container--bootstrap .select2-selection--single .select2-selection__rendered { padding-left: 24px; padding-right: 12px; }
+html[dir="rtl"] .select2-results { direction: rtl; text-align: right; }
+
+html[dir="rtl"] .flatpickr-calendar { direction: rtl; }
+html[dir="rtl"] .flatpickr-months .flatpickr-prev-month { right: auto; left: 0; transform: scaleX(-1); }
+html[dir="rtl"] .flatpickr-months .flatpickr-next-month { left: auto; right: 0; transform: scaleX(-1); }
+html[dir="rtl"] .flatpickr-weekday { text-align: center; }
+
+html[dir="rtl"] .custom-control-label::before,
+html[dir="rtl"] .custom-control-label::after { right: -1.5rem; left: auto; }
+html[dir="rtl"] .custom-control { padding-right: 1.5rem; padding-left: 0; }
+
+html[dir="rtl"] .alert-dismissible { padding-left: 4rem; padding-right: 1.25rem; }
+html[dir="rtl"] .alert-dismissible .close { left: 0; right: auto; }
+
+html[dir="rtl"] .badge { direction: rtl; }
+html[dir="rtl"] .status-badge { text-align: center; }
+
+html[dir="rtl"] .btn .fas.fa-angle-right { transform: scaleX(-1); }
+
+html[dir="rtl"] .sidebar-overlay { right: 0; left: auto; }
+
+html[dir="rtl"] .col-form-label { text-align: right; }
+html[dir="rtl"] label { text-align: right; display: block; }
+
+html[dir="rtl"] .toast { direction: rtl; }
