@@ -110,13 +110,75 @@ echo flashMessages();
         <div class="btn-group btn-block"><button class="btn btn-primary" style="width:50%"><i class="fas fa-filter"></i> <?= te('common.filter') ?></button>
         <a href="<?= SITE_URL ?>/reports_bookings.php" class="btn btn-outline-secondary" style="width:50%"><?= te('common.reset') ?></a></div>
     </div>
-    <div class="col-md-6 mb-2">
-        <div class="d-flex justify-content-between bg-light rounded p-2">
-            <div><small class="text-muted"><?= te('rep.bookings_kpi') ?></small><h5 class="mb-0 font-weight-bold"><?= $totals['count'] ?></h5></div>
-            <div><small class="text-muted"><?= te('th.quoted') ?></small><h5 class="mb-0 text-primary font-weight-bold"><?= formatMoney($totals['booked']) ?></h5></div>
-            <div><small class="text-muted"><?= te('th.collected') ?></small><h5 class="mb-0 text-success font-weight-bold"><?= formatMoney($totals['collected']) ?></h5></div>
-            <div><small class="text-muted"><?= te('th.pending') ?></small><h5 class="mb-0 text-danger font-weight-bold"><?= formatMoney($totals['pending']) ?></h5></div>
-            <?php if (hasPermission('view_dj_rak')): ?><div><small class="text-muted"><?= te('rep.dj_rak_kpi') ?></small><h5 class="mb-0 text-warning font-weight-bold"><?= formatMoney($totals['rak']) ?></h5></div><?php endif; ?>
+    <div class="col-md-12 mb-2">
+        <div class="row">
+            <div class="col-6 col-md">
+                <div class="card kpi-card kpi-card-elevated h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="kpi-label"><?= te('rep.bookings_kpi') ?></div>
+                                <div class="kpi-value mt-1"><?= $totals['count'] ?></div>
+                            </div>
+                            <div class="kpi-icon bg-gradient-primary"><i class="fas fa-book"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md">
+                <div class="card kpi-card kpi-card-elevated h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="kpi-label"><?= te('th.quoted') ?></div>
+                                <div class="kpi-value mt-1 text-primary"><?= formatMoney($totals['booked']) ?></div>
+                            </div>
+                            <div class="kpi-icon bg-gradient-secondary"><i class="fas fa-coins"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md">
+                <div class="card kpi-card kpi-card-elevated h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="kpi-label"><?= te('th.collected') ?></div>
+                                <div class="kpi-value mt-1 text-success"><?= formatMoney($totals['collected']) ?></div>
+                            </div>
+                            <div class="kpi-icon bg-gradient-success"><i class="fas fa-check-circle"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md">
+                <div class="card kpi-card kpi-card-elevated h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="kpi-label"><?= te('th.pending') ?></div>
+                                <div class="kpi-value mt-1 text-danger"><?= formatMoney($totals['pending']) ?></div>
+                            </div>
+                            <div class="kpi-icon bg-gradient-warning"><i class="fas fa-clock"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php if (hasPermission('view_dj_rak')): ?>
+            <div class="col-6 col-md">
+                <div class="card kpi-card kpi-card-elevated h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="kpi-label"><?= te('rep.dj_rak_kpi') ?></div>
+                                <div class="kpi-value mt-1 text-warning"><?= formatMoney($totals['rak']) ?></div>
+                            </div>
+                            <div class="kpi-icon bg-gradient-info"><i class="fas fa-star"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>
