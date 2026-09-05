@@ -1,0 +1,2613 @@
+{
+  "info": {
+    "_postman_id": "dj-rak-api-v1-collection-20260905",
+    "name": "DJ RAK API v1",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "DJ RAK Inventory Rental System API v1 - Complete End-to-End Test Collection"
+  },
+  "events": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.environment.get(\"token\") || pm.environment.get(\"token\").length < 60) {",
+          "    console.log(\"Token missing or too short - running auto-login...\");",
+          "    var baseUrl = pm.environment.get(\"baseUrl\");",
+          "    var adminUser = pm.environment.get(\"admin_user\");",
+          "    var adminPass = pm.environment.get(\"admin_pass\");",
+          "    pm.sendRequest({",
+          "        url: baseUrl + \"/auth/login\",",
+          "        method: \"POST\",",
+          "        header: { \"Content-Type\": \"application/json\" },",
+          "        body: {",
+          "            mode: \"raw\",",
+          "            raw: JSON.stringify({",
+          "                username: adminUser,",
+          "                password: adminPass,",
+          "                device_name: \"Postman Collection Runner\"",
+          "            })",
+          "        }",
+          "    }, function (err, res) {",
+          "        if (err || res.code < 200 || res.code >= 300) {",
+          "            console.error(\"Pre-request auto-login FAILED:\", err, res ? res.json() : \"no response\");",
+          "            pm.test(\"Pre-request auto-login\", function () { pm.expect.fail(\"Auto-login failed\"); });",
+          "            return;",
+          "        }",
+          "        var j = res.json();",
+          "        if (j && j.data && j.data.access_token) {",
+          "            pm.environment.set(\"token\", j.data.access_token);",
+          "            if (j.data.user && j.data.user.id) {",
+          "                pm.environment.set(\"userId\", j.data.user.id);",
+          "            }",
+          "            console.log(\"Pre-request auto-login OK, token set\");",
+          "        } else {",
+          "            console.error(\"Pre-request auto-login: no access_token in response\", j);",
+          "            pm.test(\"Pre-request auto-login\", function () { pm.expect.fail(\"No access_token in login response\"); });",
+          "        }",
+          "    });",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Auth",
+      "item": [
+        {
+          "name": "POST /auth/login happy",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\":\"{{admin_user}}\",\"password\":\"{{admin_pass}}\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response time < 2000 ms\", function () { pm.expect(pm.response.responseTime).to.be.below(2000); });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"access_token is string with length > 60\", function () { var j = pm.response.json(); pm.expect(j.data.access_token).to.be.a('string').and.to.have.length.above(60); });",
+                  "pm.test(\"user.id matches env userId or is 1\", function () { var j = pm.response.json(); pm.expect(j.data.user.id).to.eql(pm.environment.get('userId') || 1); });",
+                  "var j = pm.response.json(); if (j && j.data && j.data.access_token) { pm.environment.set(\"token\", j.data.access_token); } if (j && j.data && j.data.user && j.data.user.id) { pm.environment.set(\"userId\", j.data.user.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/login sad wrong password",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\":\"admin\",\"password\":\"wrong\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 401\", function () { pm.response.to.have.status(401); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response time < 2000 ms\", function () { pm.expect(pm.response.responseTime).to.be.below(2000); });",
+                  "pm.test(\"Response has success=false\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(false); });",
+                  "pm.test(\"error_code is invalid_credentials\", function () { var j = pm.response.json(); pm.expect(j.error_code).to.eql(\"invalid_credentials\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/login missing fields",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 422\", function () { pm.response.to.have.status(422); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=false\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(false); });",
+                  "pm.test(\"errors field is present\", function () { var j = pm.response.json(); pm.expect(j).to.have.property(\"errors\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /auth/me happy",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response time < 2000 ms\", function () { pm.expect(pm.response.responseTime).to.be.below(2000); });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"user.id = 1\", function () { var j = pm.response.json(); pm.expect(j.data.user.id).to.eql(1); });",
+                  "pm.test(\"role_name is Administrator\", function () { var j = pm.response.json(); pm.expect(j.data.user.role_name).to.eql(\"Administrator\"); });",
+                  "pm.test(\"permissions array is non-empty\", function () { var j = pm.response.json(); pm.expect(j.data.permissions).to.be.an('array').that.is.not.empty; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/logout happy",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. Dashboard",
+      "item": [
+        {
+          "name": "GET /dashboard/stats happy",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/stats?date_from=2026-01-01&date_to=2026-09-05",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "stats"],
+              "query": [
+                { "key": "date_from", "value": "2026-01-01" },
+                { "key": "date_to", "value": "2026-09-05" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response time < 3000 ms\", function () { pm.expect(pm.response.responseTime).to.be.below(3000); });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"total_bookings is numeric >= 0\", function () { var j = pm.response.json(); pm.expect(j.data.total_bookings).to.be.a('number').and.to.be.at.least(0); });",
+                  "pm.test(\"collected is numeric\", function () { var j = pm.response.json(); pm.expect(j.data.collected).to.be.a('number'); });",
+                  "pm.test(\"pending_balance >= 0\", function () { var j = pm.response.json(); pm.expect(j.data.pending_balance).to.be.a('number').and.to.be.at.least(0); });",
+                  "pm.test(\"expenses >= 0\", function () { var j = pm.response.json(); pm.expect(j.data.expenses).to.be.a('number').and.to.be.at.least(0); });",
+                  "pm.test(\"item_types has total_types and total_units\", function () { var j = pm.response.json(); pm.expect(j.data.item_types).to.have.property(\"total_types\"); pm.expect(j.data.item_types).to.have.property(\"total_units\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /dashboard/stats sad no auth",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "stats"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 401\", function () { pm.response.to.have.status(401); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"error_code is unauthenticated\", function () { var j = pm.response.json(); pm.expect(j.error_code).to.eql(\"unauthenticated\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /dashboard/recent_activity",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/recent_activity?page=1&per_page=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "recent_activity"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "per_page", "value": "5" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response time < 2000 ms\", function () { pm.expect(pm.response.responseTime).to.be.below(2000); });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"pagination exists\", function () { var j = pm.response.json(); pm.expect(j).to.have.property(\"pagination\"); });",
+                  "pm.test(\"each row has id, action, created_at, user_name\", function () { var j = pm.response.json(); var rows = j.data || []; rows.forEach(function(r) { pm.expect(r).to.have.property(\"id\"); pm.expect(r).to.have.property(\"action\"); pm.expect(r).to.have.property(\"created_at\"); pm.expect(r.user_name).to.not.be.null; }); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Bookings",
+      "item": [
+        {
+          "name": "GET /bookings list",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bookings?page=1&per_page=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["bookings"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "per_page", "value": "5" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"pagination exists\", function () { var j = pm.response.json(); pm.expect(j).to.have.property(\"pagination\"); });",
+                  "pm.test(\"data is array with booking_number + client_name\", function () { var j = pm.response.json(); var rows = j.data || []; if (rows.length > 0) { pm.expect(rows[0]).to.have.property(\"booking_number\"); pm.expect(rows[0]).to.have.property(\"client_name\"); } });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /bookings happy",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"client_id\":1,\"date_from\":\"2026-09-07\",\"date_to\":\"2026-09-08\",\"quoted_amount\":1500.00,\"dj_rak_amount\":200,\"location\":\"Wedding Hall\",\"items\":[{\"item_type_id\":1,\"quantity\":1,\"rental_value\":500}]}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/bookings",
+              "host": ["{{baseUrl}}"],
+              "path": ["bookings"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"data.id > 0\", function () { var j = pm.response.json(); pm.expect(j.data.id).to.be.a('number').and.to.be.above(0); });",
+                  "pm.test(\"booking_number starts with BK+YYYY\", function () { var j = pm.response.json(); pm.expect(j.data.booking_number).to.match(/^BK20/); });",
+                  "var j = pm.response.json(); if (j && j.data && j.data.id) { pm.environment.set(\"bookingId\", j.data.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /bookings sad invalid client",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"client_id\":999999,\"date_from\":\"2026-09-07\",\"date_to\":\"2026-09-08\",\"quoted_amount\":1500.00,\"dj_rak_amount\":200,\"location\":\"Wedding Hall\",\"items\":[{\"item_type_id\":1,\"quantity\":1,\"rental_value\":500}]}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/bookings",
+              "host": ["{{baseUrl}}"],
+              "path": ["bookings"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 422\", function () { pm.response.to.have.status(422); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=false\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(false); });",
+                  "pm.test(\"errors object present\", function () { var j = pm.response.json(); pm.expect(j).to.have.property(\"errors\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /bookings/:bookingId detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/{{bookingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["bookings", "{{bookingId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"booking.id matches env bookingId\", function () { var j = pm.response.json(); pm.expect(j.data.booking.id).to.eql(parseInt(pm.environment.get(\"bookingId\")) || j.data.booking.id); });",
+                  "pm.test(\"items array present\", function () { var j = pm.response.json(); pm.expect(j.data.booking.items).to.be.an('array'); });",
+                  "pm.test(\"quoted_amount > 0\", function () { var j = pm.response.json(); pm.expect(j.data.booking.quoted_amount).to.be.above(0); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT /bookings/:bookingId update",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"location\":\"Updated Hall\",\"status\":\"Quotation\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/bookings/{{bookingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["bookings", "{{bookingId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"location updated to Updated Hall\", function () { var j = pm.response.json(); pm.expect(j.data.location).to.eql(\"Updated Hall\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /bookings/:bookingId/status",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"to\":\"Confirmed\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/bookings/{{bookingId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["bookings", "{{bookingId}}", "status"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"status is Confirmed\", function () { var j = pm.response.json(); pm.expect(j.data.status).to.eql(\"Confirmed\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /bookings/:bookingId/regenerate_token",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/bookings/{{bookingId}}/regenerate_token",
+              "host": ["{{baseUrl}}"],
+              "path": ["bookings", "{{bookingId}}", "regenerate_token"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"confirmation_token length is 64 hex chars\", function () { var j = pm.response.json(); pm.expect(j.data.confirmation_token).to.be.a('string').and.to.have.lengthOf(64); pm.expect(j.data.confirmation_token).to.match(/^[0-9a-fA-F]+$/); });",
+                  "var j = pm.response.json(); if (j && j.data && j.data.confirmation_token) { pm.environment.set(\"confirmToken\", j.data.confirmation_token); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /bookings/:bookingId/cancel",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/{{bookingId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["bookings", "{{bookingId}}", "cancel"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"status is Canceled\", function () { var j = pm.response.json(); pm.expect(j.data.status).to.eql(\"Canceled\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /bookings/:bookingId/invoice",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/{{bookingId}}/invoice",
+              "host": ["{{baseUrl}}"],
+              "path": ["bookings", "{{bookingId}}", "invoice"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"has company key\", function () { var j = pm.response.json(); pm.expect(j.data).to.have.property(\"company\"); });",
+                  "pm.test(\"has booking key\", function () { var j = pm.response.json(); pm.expect(j.data).to.have.property(\"booking\"); });",
+                  "pm.test(\"has client key\", function () { var j = pm.response.json(); pm.expect(j.data).to.have.property(\"client\"); });",
+                  "pm.test(\"has items key\", function () { var j = pm.response.json(); pm.expect(j.data).to.have.property(\"items\"); });",
+                  "pm.test(\"has totals key\", function () { var j = pm.response.json(); pm.expect(j.data).to.have.property(\"totals\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Calendar",
+      "item": [
+        {
+          "name": "GET /calendar month range",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/calendar?start=2026-09-01&end=2026-09-30",
+              "host": ["{{baseUrl}}"],
+              "path": ["calendar"],
+              "query": [
+                { "key": "start", "value": "2026-09-01" },
+                { "key": "end", "value": "2026-09-30" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"data is array\", function () { var j = pm.response.json(); pm.expect(j.data).to.be.an('array'); });",
+                  "pm.test(\"each row has id, title, start, end, status, color (#hex)\", function () { var j = pm.response.json(); var rows = j.data || []; rows.forEach(function(r) { pm.expect(r).to.have.property(\"id\"); pm.expect(r).to.have.property(\"title\"); pm.expect(r).to.have.property(\"start\"); pm.expect(r).to.have.property(\"end\"); pm.expect(r).to.have.property(\"status\"); pm.expect(r.color).to.match(/^#[0-9a-fA-F]{6}$/); }); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /calendar/download/:bookingId ICS",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/calendar/download/{{bookingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["calendar", "download", "{{bookingId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"MIME is text/calendar\", function () { var ct = pm.response.headers.get(\"Content-Type\") || \"\"; pm.expect(ct).to.include(\"text/calendar\"); });",
+                  "pm.test(\"filename ends with .ics\", function () { var cd = pm.response.headers.get(\"Content-Disposition\") || \"\"; pm.expect(cd).to.match(/\\.ics(\\?|$|\\s|;|\\\")/); });",
+                  "pm.test(\"ical_data contains BEGIN:VCALENDAR\", function () { var j = pm.response.json(); var body = (j && j.data && j.data.ical_data) ? j.data.ical_data : pm.response.text(); pm.expect(body).to.include(\"BEGIN:VCALENDAR\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /calendar sad unauth",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/calendar",
+              "host": ["{{baseUrl}}"],
+              "path": ["calendar"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 401\", function () { pm.response.to.have.status(401); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Clients",
+      "item": [
+        {
+          "name": "GET /clients list",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/clients?page=1&per_page=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["clients"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "per_page", "value": "5" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"pagination exists\", function () { var j = pm.response.json(); pm.expect(j).to.have.property(\"pagination\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /clients happy",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Test Client X\",\"phone\":\"+962123456789\",\"email\":\"testclientx@example.com\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/clients",
+              "host": ["{{baseUrl}}"],
+              "path": ["clients"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"data.id > 0\", function () { var j = pm.response.json(); pm.expect(j.data.id).to.be.a('number').and.to.be.above(0); });",
+                  "pm.test(\"name saved as Test Client X\", function () { var j = pm.response.json(); pm.expect(j.data.name).to.eql(\"Test Client X\"); });",
+                  "var j = pm.response.json(); if (j && j.data && j.data.id) { pm.environment.set(\"clientId\", j.data.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /clients sad empty",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/clients",
+              "host": ["{{baseUrl}}"],
+              "path": ["clients"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 422\", function () { pm.response.to.have.status(422); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=false\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(false); });",
+                  "pm.test(\"errors.name present\", function () { var j = pm.response.json(); pm.expect(j.errors).to.have.property(\"name\"); });",
+                  "pm.test(\"errors.phone present\", function () { var j = pm.response.json(); pm.expect(j.errors).to.have.property(\"phone\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /clients/:clientId detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/clients/{{clientId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["clients", "{{clientId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"bookings_count is numeric\", function () { var j = pm.response.json(); pm.expect(j.data.bookings_count).to.be.a('number'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT /clients/:clientId update",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"notes\":\"VIP\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/clients/{{clientId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["clients", "{{clientId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"notes changed to VIP\", function () { var j = pm.response.json(); pm.expect(j.data.notes).to.eql(\"VIP\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /clients/:clientId soft delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/clients/{{clientId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["clients", "{{clientId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /clients/:clientId/statement",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/clients/{{clientId}}/statement",
+              "host": ["{{baseUrl}}"],
+              "path": ["clients", "{{clientId}}", "statement"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"summary has booked, collected, pending\", function () { var j = pm.response.json(); pm.expect(j.data.summary).to.have.property(\"booked\"); pm.expect(j.data.summary).to.have.property(\"collected\"); pm.expect(j.data.summary).to.have.property(\"pending\"); });",
+                  "pm.test(\"recent arrays present\", function () { var j = pm.response.json(); pm.expect(j.data).to.have.property(\"recent_bookings\"); pm.expect(j.data).to.have.property(\"recent_payments\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Inventory",
+      "item": [
+        {
+          "name": "GET /categories list",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["categories"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"data is array or pagination rows\", function () { var j = pm.response.json(); if (j.data && Array.isArray(j.data)) { pm.expect(j.data).to.be.an('array'); } else { pm.expect(j).to.have.property(\"pagination\"); } });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /categories happy",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Lights\",\"description\":\"Lighting equipment\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["categories"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"data.id > 0\", function () { var j = pm.response.json(); pm.expect(j.data.id).to.be.a('number').and.to.be.above(0); });",
+                  "var j = pm.response.json(); if (j && j.data && j.data.id) { pm.environment.set(\"catId\", j.data.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT /categories/:catId update",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Stage Lights\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/categories/{{catId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["categories", "{{catId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"name updated to Stage Lights\", function () { var j = pm.response.json(); pm.expect(j.data.name).to.eql(\"Stage Lights\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /categories/:catId soft delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/categories/{{catId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["categories", "{{catId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /item-types list",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/item-types?page=1&per_page=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["item-types"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "per_page", "value": "5" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"rows have type_name\", function () { var j = pm.response.json(); var rows = j.data || []; if (rows.length > 0) { pm.expect(rows[0]).to.have.property(\"type_name\"); } });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /item-types happy",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Moving Head 230W\",\"category_id\":1,\"quantity\":4,\"daily_rate\":80}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/item-types",
+              "host": ["{{baseUrl}}"],
+              "path": ["item-types"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"data.id > 0\", function () { var j = pm.response.json(); pm.expect(j.data.id).to.be.a('number').and.to.be.above(0); });",
+                  "var j = pm.response.json(); if (j && j.data && j.data.id) { pm.environment.set(\"itemTypeId\", j.data.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /item-types/:itemTypeId/availability",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/item-types/{{itemTypeId}}/availability?date_from=2026-09-05&date_to=2026-09-06",
+              "host": ["{{baseUrl}}"],
+              "path": ["item-types", "{{itemTypeId}}", "availability"],
+              "query": [
+                { "key": "date_from", "value": "2026-09-05" },
+                { "key": "date_to", "value": "2026-09-06" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"total_quantity >= 0 integer\", function () { var j = pm.response.json(); pm.expect(j.data.total_quantity).to.be.a('number').and.to.be.at.least(0); });",
+                  "pm.test(\"available = total - booked\", function () { var j = pm.response.json(); pm.expect(j.data.available_quantity).to.eql(j.data.total_quantity - (j.data.booked_quantity || 0)); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /availability/item-types bulk",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/availability/item-types?date_from=2026-09-05&date_to=2026-09-06",
+              "host": ["{{baseUrl}}"],
+              "path": ["availability", "item-types"],
+              "query": [
+                { "key": "date_from", "value": "2026-09-05" },
+                { "key": "date_to", "value": "2026-09-06" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"data is array\", function () { var j = pm.response.json(); pm.expect(j.data).to.be.an('array'); });",
+                  "pm.test(\"rows have booked_quantity and available_quantity\", function () { var j = pm.response.json(); var rows = j.data || []; if (rows.length > 0) { pm.expect(rows[0]).to.have.property(\"booked_quantity\"); pm.expect(rows[0]).to.have.property(\"available_quantity\"); } });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /inventory-items list",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/inventory-items",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory-items"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"pagination exists\", function () { var j = pm.response.json(); pm.expect(j).to.have.property(\"pagination\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /inventory-items happy",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"item_type_id\":{{itemTypeId}},\"serial_number\":\"SN-TEST-0001\",\"manufacturer\":\"Clay Paky\",\"model\":\"Sharpy\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/inventory-items",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory-items"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"data.id > 0\", function () { var j = pm.response.json(); pm.expect(j.data.id).to.be.a('number').and.to.be.above(0); });",
+                  "var j = pm.response.json(); if (j && j.data && j.data.id) { pm.environment.set(\"inventoryItemId\", j.data.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /inventory-items/:inventoryItemId",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/inventory-items/{{inventoryItemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory-items", "{{inventoryItemId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Expenses",
+      "item": [
+        {
+          "name": "GET /expense-types list",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/expense-types",
+              "host": ["{{baseUrl}}"],
+              "path": ["expense-types"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"data is array\", function () { var j = pm.response.json(); pm.expect(j.data).to.be.an('array'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /expense-types happy",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Fuel\",\"description\":\"Gas\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/expense-types",
+              "host": ["{{baseUrl}}"],
+              "path": ["expense-types"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"data.id > 0\", function () { var j = pm.response.json(); pm.expect(j.data.id).to.be.a('number').and.to.be.above(0); });",
+                  "var j = pm.response.json(); if (j && j.data && j.data.id) { pm.environment.set(\"etId\", j.data.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /expense-types/:etId",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/expense-types/{{etId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["expense-types", "{{etId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /expenses list",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/expenses",
+              "host": ["{{baseUrl}}"],
+              "path": ["expenses"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"pagination exists with rows\", function () { var j = pm.response.json(); pm.expect(j).to.have.property(\"pagination\"); pm.expect(j).to.have.property(\"data\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /expenses happy",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"type_id\":{{etId}},\"date\":\"2026-09-05\",\"amount\":45,\"payment_method\":\"Cash\",\"notes\":\"Delivery van fuel\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/expenses",
+              "host": ["{{baseUrl}}"],
+              "path": ["expenses"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"data.id > 0\", function () { var j = pm.response.json(); pm.expect(j.data.id).to.be.a('number').and.to.be.above(0); });",
+                  "var j = pm.response.json(); if (j && j.data && j.data.id) { pm.environment.set(\"expId\", j.data.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /expenses/:expId hard delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/expenses/{{expId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["expenses", "{{expId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "7. Payments",
+      "item": [
+        {
+          "name": "GET /payments list",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payments?page=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments"],
+              "query": [
+                { "key": "page", "value": "1" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"pagination exists\", function () { var j = pm.response.json(); pm.expect(j).to.have.property(\"pagination\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /payments happy",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"booking_id\":{{bookingId}},\"payment_date\":\"2026-09-05\",\"amount\":500,\"payment_method\":\"Bank Transfer\",\"reference\":\"TRF001\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"data.id > 0\", function () { var j = pm.response.json(); pm.expect(j.data.id).to.be.a('number').and.to.be.above(0); });",
+                  "var j = pm.response.json(); if (j && j.data && j.data.id) { pm.environment.set(\"paymentId\", j.data.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /payments/:paymentId",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payments/{{paymentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", "{{paymentId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /payments sad overpaid non-admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"booking_id\":{{bookingId}},\"payment_date\":\"2026-09-05\",\"amount\":9999,\"payment_method\":\"Bank Transfer\",\"reference\":\"OVER001\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 422 (or 200 if admin has override)\", function () { if (pm.response.code !== 201) { pm.response.to.have.status(422); } });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "8. Users/Roles",
+      "item": [
+        {
+          "name": "GET /users list",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users?page=1&per_page=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "per_page", "value": "5" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"pagination exists\", function () { var j = pm.response.json(); pm.expect(j).to.have.property(\"pagination\"); });",
+                  "pm.test(\"no password_hash field in rows\", function () { var j = pm.response.json(); var rows = j.data || []; rows.forEach(function(r) { pm.expect(r).to.not.have.property(\"password_hash\"); }); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /users happy",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Test Staff\",\"username\":\"staff1\",\"email\":\"staff1@example.com\",\"password\":\"Password123\",\"role_id\":2,\"phone\":\"+962700000000\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () { pm.response.to.have.status(201); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"data.id > 0\", function () { var j = pm.response.json(); pm.expect(j.data.id).to.be.a('number').and.to.be.above(0); });",
+                  "var j = pm.response.json(); if (j && j.data && j.data.id) { pm.environment.set(\"userId\", j.data.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /users sad short pw",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Test\",\"username\":\"staff2\",\"email\":\"staff2@example.com\",\"password\":\"123\",\"role_id\":2,\"phone\":\"+962700000001\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 422\", function () { pm.response.to.have.status(422); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"errors.password < 8\", function () { var j = pm.response.json(); pm.expect(j.errors).to.have.property(\"password\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /users/:userId detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"no password_hash field\", function () { var j = pm.response.json(); pm.expect(j.data.user).to.not.have.property(\"password_hash\"); });",
+                  "pm.test(\"has role_name\", function () { var j = pm.response.json(); pm.expect(j.data.user).to.have.property(\"role_name\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /users/:userId/deactivate",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}/deactivate",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}", "deactivate"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"active = 0\", function () { var j = pm.response.json(); pm.expect(j.data.active).to.eql(0); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /roles list",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"data is array with nested perms arrays\", function () { var j = pm.response.json(); pm.expect(j.data).to.be.an('array'); if (j.data.length > 0) { pm.expect(j.data[0].permissions).to.be.an('array'); } });",
+                  "pm.test(\"Administrator has 21 permissions\", function () { var j = pm.response.json(); var admin = j.data.find(function(r) { return r.name === \"Administrator\"; }); if (admin) { pm.expect(admin.permissions.length).to.eql(21); } });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /permissions flat",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/permissions",
+              "host": ["{{baseUrl}}"],
+              "path": ["permissions"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"flat array with 21 rows\", function () { var j = pm.response.json(); pm.expect(j.data).to.be.an('array').and.to.have.lengthOf(21); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /users/:userId/permissions",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}/permissions",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}", "permissions"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"data is array of strings\", function () { var j = pm.response.json(); pm.expect(j.data).to.be.an('array'); j.data.forEach(function(p) { pm.expect(p).to.be.a('string'); }); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "9. Settings",
+      "item": [
+        {
+          "name": "GET /settings",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/settings",
+              "host": ["{{baseUrl}}"],
+              "path": ["settings"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"company_name is string\", function () { var j = pm.response.json(); pm.expect(j.data.company_name).to.be.a('string'); });",
+                  "pm.test(\"currency_symbol is string\", function () { var j = pm.response.json(); pm.expect(j.data.currency_symbol).to.be.a('string'); });",
+                  "pm.test(\"booking_prefix is string\", function () { var j = pm.response.json(); pm.expect(j.data.booking_prefix).to.be.a('string'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT /settings update",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"company_name\":\"DJ RAK - Mobile App Edition\",\"company_phone\":\"+962000000000\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/settings",
+              "host": ["{{baseUrl}}"],
+              "path": ["settings"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"company_name updated\", function () { var j = pm.response.json(); pm.expect(j.data.company_name).to.eql(\"DJ RAK - Mobile App Edition\"); });",
+                  "pm.test(\"company_phone updated\", function () { var j = pm.response.json(); pm.expect(j.data.company_phone).to.eql(\"+962000000000\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "10. Reports",
+      "item": [
+        {
+          "name": "GET /reports/bookings",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reports/bookings?page=1&per_page=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "bookings"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "per_page", "value": "10" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"has rows and summary\", function () { var j = pm.response.json(); pm.expect(j.data).to.have.property(\"rows\"); pm.expect(j.data).to.have.property(\"summary\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /reports/bookings/export/csv",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reports/bookings/export/csv?date_from=2025-01-01&date_to=2026-09-05",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "bookings", "export", "csv"],
+              "query": [
+                { "key": "date_from", "value": "2025-01-01" },
+                { "key": "date_to", "value": "2026-09-05" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"MIME is text/csv\", function () { var ct = pm.response.headers.get(\"Content-Type\") || \"\"; pm.expect(ct).to.include(\"text/csv\"); });",
+                  "pm.test(\"filename contains bookings_report_\", function () { var cd = pm.response.headers.get(\"Content-Disposition\") || \"\"; var j = pm.response.json(); var name = (j && j.data && j.data.filename) ? j.data.filename : cd; pm.expect(name).to.include(\"bookings_report_\"); });",
+                  "pm.test(\"base64_content longer than 100 chars and starts with Booking Number\", function () { var j = pm.response.json(); var b64 = (j && j.data && j.data.base64_content) ? j.data.base64_content : \"\"; pm.expect(b64).to.be.a('string').and.to.have.length.above(100); try { var decoded = atob(b64); pm.expect(decoded.substring(0, 50)).to.include(\"Booking Number\"); } catch(e) {} });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /reports/financial-summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reports/financial-summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "financial-summary"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"total_booked_amount is number\", function () { var j = pm.response.json(); pm.expect(j.data.total_booked_amount).to.be.a('number'); });",
+                  "pm.test(\"total_collected is numeric\", function () { var j = pm.response.json(); pm.expect(j.data.total_collected).to.be.a('number'); });",
+                  "pm.test(\"total_expenses is numeric\", function () { var j = pm.response.json(); pm.expect(j.data.total_expenses).to.be.a('number'); });",
+                  "pm.test(\"net_income is numeric\", function () { var j = pm.response.json(); pm.expect(j.data.net_income).to.be.a('number'); });",
+                  "pm.test(\"collection_pct between 0 and 100\", function () { var j = pm.response.json(); pm.expect(j.data.collection_pct).to.be.a('number').and.to.be.at.least(0).and.to.be.at.most(100); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /reports/expenses",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reports/expenses",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "expenses"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"has rows + summary total_expense_amount\", function () { var j = pm.response.json(); pm.expect(j.data).to.have.property(\"rows\"); pm.expect(j.data.summary).to.have.property(\"total_expense_amount\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /reports/expenses/export/csv",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reports/expenses/export/csv",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "expenses", "export", "csv"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON or CSV content\", function () { if (pm.response.headers.get(\"Content-Type\") && pm.response.headers.get(\"Content-Type\").includes(\"text/csv\")) { pm.expect(true).to.eql(true); } else { pm.response.to.be.json; } });",
+                  "pm.test(\"base64_content or CSV body present\", function () { var j = pm.response.json(); if (j && j.data) { pm.expect(j.data.base64_content).to.be.a('string'); } });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /reports/inventory",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reports/inventory",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "inventory"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"has summary and rows\", function () { var j = pm.response.json(); pm.expect(j.data).to.have.property(\"summary\"); pm.expect(j.data).to.have.property(\"rows\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /reports/client-statement/:clientId",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reports/client-statement/{{clientId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "client-statement", "{{clientId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"summary has total_bookings\", function () { var j = pm.response.json(); pm.expect(j.data.summary).to.have.property(\"total_bookings\"); });",
+                  "pm.test(\"bookings array present\", function () { var j = pm.response.json(); pm.expect(j.data.bookings).to.be.an('array'); });",
+                  "pm.test(\"payments array present\", function () { var j = pm.response.json(); pm.expect(j.data.payments).to.be.an('array'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /reports/bookings sad no perm",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reports/bookings",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "bookings"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 401 or 403\", function () { pm.expect([401, 403]).to.include(pm.response.code); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "11. Profile",
+      "item": [
+        {
+          "name": "GET /profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["profile"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"has user object\", function () { var j = pm.response.json(); pm.expect(j.data).to.have.property(\"user\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT /profile update",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Admin Updated\",\"phone\":\"+962777777777\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["profile"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"name updated to Admin Updated\", function () { var j = pm.response.json(); pm.expect(j.data.name).to.eql(\"Admin Updated\"); });",
+                  "pm.test(\"phone updated\", function () { var j = pm.response.json(); pm.expect(j.data.phone).to.eql(\"+962777777777\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /profile/password sad wrong old",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"old_password\":\"wrongpass\",\"new_password\":\"Newpass1234\",\"confirm_password\":\"Newpass1234\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/profile/password",
+              "host": ["{{baseUrl}}"],
+              "path": ["profile", "password"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 422\", function () { pm.response.to.have.status(422); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"errors.old_password present\", function () { var j = pm.response.json(); pm.expect(j.errors).to.have.property(\"old_password\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /profile/password sad short new",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"old_password\":\"admin123\",\"new_password\":\"123\",\"confirm_password\":\"123\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/profile/password",
+              "host": ["{{baseUrl}}"],
+              "path": ["profile", "password"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 422\", function () { pm.response.to.have.status(422); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"errors.new_password present\", function () { var j = pm.response.json(); pm.expect(j.errors).to.have.property(\"new_password\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /profile/password sad confirm mismatch",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"old_password\":\"admin123\",\"new_password\":\"ValidPass123\",\"confirm_password\":\"DifferentPass456\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/profile/password",
+              "host": ["{{baseUrl}}"],
+              "path": ["profile", "password"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 422\", function () { pm.response.to.have.status(422); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"errors.confirm_password present\", function () { var j = pm.response.json(); pm.expect(j.errors).to.have.property(\"confirm_password\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "12. Public Confirmation",
+      "item": [
+        {
+          "name": "GET /public/confirm invalid token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/public/confirm/invalidtoken1234567890",
+              "host": ["{{baseUrl}}"],
+              "path": ["public", "confirm", "invalidtoken1234567890"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 404\", function () { pm.response.to.have.status(404); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"success false with error_code\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j).to.have.property(\"error_code\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /public/confirm/:confirmToken valid",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/public/confirm/{{confirmToken}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["public", "confirm", "{{confirmToken}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"has booking key\", function () { var j = pm.response.json(); pm.expect(j.data).to.have.property(\"booking\"); });",
+                  "pm.test(\"has client key\", function () { var j = pm.response.json(); pm.expect(j.data).to.have.property(\"client\"); });",
+                  "pm.test(\"has items key\", function () { var j = pm.response.json(); pm.expect(j.data).to.have.property(\"items\"); });",
+                  "pm.test(\"has company key\", function () { var j = pm.response.json(); pm.expect(j.data).to.have.property(\"company\"); });",
+                  "pm.test(\"has totals key\", function () { var j = pm.response.json(); pm.expect(j.data).to.have.property(\"totals\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /public/confirm/:confirmToken confirm action",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"action\":\"confirm\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/public/confirm/{{confirmToken}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["public", "confirm", "{{confirmToken}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"customer_response Confirmed or customer_confirmed_at not null\", function () { var j = pm.response.json(); pm.expect(j.data.customer_response === \"Confirmed\" || j.data.customer_confirmed_at !== null).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /public/confirm/:confirmToken idempotent again",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"action\":\"confirm\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/public/confirm/{{confirmToken}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["public", "confirm", "{{confirmToken}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 (idempotent - no double write)\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"same success\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "13. Misc",
+      "item": [
+        {
+          "name": "GET /search q=BK",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/search?q=BK",
+              "host": ["{{baseUrl}}"],
+              "path": ["search"],
+              "query": [
+                { "key": "q", "value": "BK" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"has query echoed\", function () { var j = pm.response.json(); pm.expect(j.data).to.have.property(\"query\"); });",
+                  "pm.test(\"results is array\", function () { var j = pm.response.json(); pm.expect(j.data.results).to.be.an('array'); });",
+                  "pm.test(\"total >= 0\", function () { var j = pm.response.json(); pm.expect(j.data.total).to.be.a('number').and.to.be.at.least(0); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /search sad q=A too short",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/search?q=A",
+              "host": ["{{baseUrl}}"],
+              "path": ["search"],
+              "query": [
+                { "key": "q", "value": "A" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 422\", function () { pm.response.to.have.status(422); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"error_code is search_query_short\", function () { var j = pm.response.json(); pm.expect(j.error_code).to.eql(\"search_query_short\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /audit-logs list",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/audit-logs?page=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["audit-logs"],
+              "query": [
+                { "key": "page", "value": "1" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"pagination exists\", function () { var j = pm.response.json(); pm.expect(j).to.have.property(\"pagination\"); });",
+                  "pm.test(\"rows have action and user_name\", function () { var j = pm.response.json(); var rows = j.data || []; if (rows.length > 0) { pm.expect(rows[0]).to.have.property(\"action\"); pm.expect(rows[0]).to.have.property(\"user_name\"); } });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /i18n/en public",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/i18n/en",
+              "host": ["{{baseUrl}}"],
+              "path": ["i18n", "en"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"lang = en\", function () { var j = pm.response.json(); pm.expect(j.data.lang).to.eql(\"en\"); });",
+                  "pm.test(\"count >= 500 keys\", function () { var j = pm.response.json(); pm.expect(j.data.count).to.be.a('number').and.to.be.at.least(500); });",
+                  "pm.test(\"dictionary is object\", function () { var j = pm.response.json(); pm.expect(j.data.dictionary).to.be.an('object'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /i18n/ar public",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/i18n/ar",
+              "host": ["{{baseUrl}}"],
+              "path": ["i18n", "ar"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"lang = ar\", function () { var j = pm.response.json(); pm.expect(j.data.lang).to.eql(\"ar\"); });",
+                  "pm.test(\"dictionary is object\", function () { var j = pm.response.json(); pm.expect(j.data.dictionary).to.be.an('object'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /i18n/set to ar then en",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"lang\":\"ar\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/i18n/set",
+              "host": ["{{baseUrl}}"],
+              "path": ["i18n", "set"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Response is JSON\", function () { pm.response.to.be.json; });",
+                  "pm.test(\"Response has success=true\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); });",
+                  "pm.test(\"current_lang = ar\", function () { var j = pm.response.json(); pm.expect(j.data.current_lang).to.eql(\"ar\"); });",
+                  "pm.sendRequest({ url: pm.environment.get(\"baseUrl\") + \"/i18n/set\", method: \"POST\", header: { \"Content-Type\": \"application/json\", \"Authorization\": \"Bearer \" + pm.environment.get(\"token\") }, body: { mode: \"raw\", raw: JSON.stringify({ lang: \"en\" }) } }, function(err, res) { console.log(\"Reverted lang to en:\", res ? res.code : err); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
